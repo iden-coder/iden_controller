@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="iden_controller" name="my_base_driver" type="iden_my_base_driver" output="screen" >
+
+    <rosparam command="load" file="$(find iden_controller)/config/driver_params_ucarV2.yaml" />
+    <!-- <rosparam command="load" file="$(find iden_controller)/config/driver_params_xiao.yaml" /> -->
+  </node>
+  <!-- <node pkg="joy" name="joy_node" type="joy_node"/> -->
+</launch> 

@@ -1,0 +1,20 @@
+# ROS build artifacts
+build/
+devel/
+install/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# Logs and bags
+*.log
+*.bag
+
+# Compiled objects
+*.o
+*.so
