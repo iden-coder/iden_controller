@@ -69,9 +69,9 @@ include_directories(
 
 include_directories(include)
 
-add_executable(iden_base_driver  src/base_driver_iden.cpp)
-add_dependencies(iden_base_driver iden_controller_generate_messages_cpp)
-target_link_libraries(iden_base_driver iden_crc_table_fd ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_executable(base_driver_iden  src/base_driver_iden.cpp)
+add_dependencies(base_driver_iden iden_controller_generate_messages_cpp)
+target_link_libraries(base_driver_iden crc_table_fd ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(iden_my_base_driver  src/my_base_driver_iden.cpp)
 add_dependencies(iden_my_base_driver iden_controller_generate_messages_cpp)
