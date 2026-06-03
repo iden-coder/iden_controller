@@ -1,28 +1,29 @@
 port: /dev/ttyS0 #ttyUSB0 # base_serial_port
-baud:  921600
+baud: 921600 # 115200
 base_frame: base_link
 odom_frame: odom
 joy_topic:  /joy
 odom_topic: /odom
 base_shape_a: 0.2169
-wheel_radius: 0.04657 
+wheel_radius: 0.04657
 vel_topic: /cmd_vel
-provide_odom_tf: false  # EKF节点负责发odom TF
+# provide_odom_tf: true
 cmd_timeout: 0.2
 serial_timeout: 50
 linear_speed_max:  3.0
 angular_speed_max: 3.14
-Mileage_file_name:  car_Mileage_info.txt
-debug_log:  false
 
-# PID 闭环控制
+# === PID 闭环控制 (m/s, rad/s) ===
 enable_pid: true
+# X 轴线速度 PID
 kp_vx: 0.5
-ki_vx: 0.1
+ki_vx: 0.2
 kd_vx: 0.0
+# Y 轴线速度 PID
 kp_vy: 0.5
-ki_vy: 0.1
+ki_vy: 0.2
 kd_vy: 0.0
+# Z 轴角速度 PID (已调优)
 kp_vth: 1.0
 ki_vth: 0.1
 kd_vth: 0.05
@@ -37,5 +38,8 @@ max_accel_x: 1.0
 max_accel_y: 1.0
 max_accel_th: 2.0
 
-# cmd_vel 低通滤波系数 (1.0=无滤波, 越小越平滑)
+# cmd_vel 低通滤波系数 (已调优: 越小越平滑，1.0=无滤波)
 cmd_vel_filter_alpha: 0.6
+
+Mileage_file_name:  car_Mileage_info.txt
+debug_log:  false

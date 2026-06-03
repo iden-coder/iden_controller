@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1253px" height="306px" viewBox="0 0 1253 306" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#F9FBFF" offset="0%"></stop>
+            <stop stop-color="#EAF1FF" offset="100%"></stop>
+        </linearGradient>
+        <path d="M28.6396103,18.6396103 L98.6396103,18.6396103 C104.162458,18.6396103 108.63961,23.1167628 108.63961,28.6396103 L108.63961,98.6396103 C108.63961,104.162458 104.162458,108.63961 98.6396103,108.63961 L28.6396103,108.63961 C23.1167628,108.63961 18.6396103,104.162458 18.6396103,98.6396103 L18.6396103,28.6396103 C18.6396103,23.1167628 23.1167628,18.6396103 28.6396103,18.6396103 Z" id="path-2"></path>
+        <filter x="-86.7%" y="-80.0%" width="273.3%" height="273.3%" filterUnits="objectBoundingBox" id="filter-3">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-66.7%" y="-60.0%" width="233.3%" height="233.3%" filterUnits="objectBoundingBox" id="filter-4">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-5">
+            <stop stop-color="#F9FBFF" offset="0%"></stop>
+            <stop stop-color="#EAF1FF" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-6" x="0" y="0" width="160" height="134" rx="10"></rect>
+        <filter x="-48.8%" y="-53.7%" width="197.5%" height="216.4%" filterUnits="objectBoundingBox" id="filter-7">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-37.5%" y="-40.3%" width="175.0%" height="189.6%" filterUnits="objectBoundingBox" id="filter-8">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <rect id="path-9" x="0" y="0" width="160" height="134" rx="10"></rect>
+        <filter x="-48.8%" y="-53.7%" width="197.5%" height="216.4%" filterUnits="objectBoundingBox" id="filter-10">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-37.5%" y="-40.3%" width="175.0%" height="189.6%" filterUnits="objectBoundingBox" id="filter-11">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-12">
+            <stop stop-color="#F9FBFF" offset="0%"></stop>
+            <stop stop-color="#EAF1FF" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-13" x="0" y="0" width="160" height="110" rx="10"></rect>
+        <filter x="-48.8%" y="-65.5%" width="197.5%" height="241.8%" filterUnits="objectBoundingBox" id="filter-14">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-37.5%" y="-49.1%" width="175.0%" height="209.1%" filterUnits="objectBoundingBox" id="filter-15">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <rect id="path-16" x="0" y="0" width="160" height="110" rx="10"></rect>
+        <filter x="-48.8%" y="-65.5%" width="197.5%" height="241.8%" filterUnits="objectBoundingBox" id="filter-17">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-37.5%" y="-49.1%" width="175.0%" height="209.1%" filterUnits="objectBoundingBox" id="filter-18">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-19">
+            <stop stop-color="#F9FBFF" offset="0%"></stop>
+            <stop stop-color="#EAF1FF" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-20" x="0" y="0" width="160" height="206" rx="10"></rect>
+        <filter x="-48.8%" y="-35.0%" width="197.5%" height="175.7%" filterUnits="objectBoundingBox" id="filter-21">
+            <feOffset dx="0" dy="6" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="25" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.790915518   0 0 0 0 0.817426653   0 0 0 0 0.905797101  0 0 0 0.7 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <filter x="-37.5%" y="-26.2%" width="175.0%" height="158.3%" filterUnits="objectBoundingBox" id="filter-22">
+            <feGaussianBlur stdDeviation="10" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.792156863   0 0 0 0 0.815686275   0 0 0 0 0.905882353  0 0 0 0.3 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="智能车竞赛-竞赛规则" transform="translate(-320, -4318)">
+            <g id="编组" transform="translate(395.3604, 4362)">
+                <g transform="translate(0, 51.3604)">
+                    <g id="矩形-10" transform="translate(63.6396, 63.6396) rotate(45) translate(-63.6396, -63.6396)">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                        <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                        <path stroke="#FFFFFF" stroke-width="2" d="M98.6396103,19.6396103 C101.124892,19.6396103 103.374892,20.6469696 105.003571,22.2756493 C106.632251,23.9043289 107.63961,26.1543289 107.63961,28.6396103 L107.63961,98.6396103 C107.63961,101.124892 106.632251,103.374892 105.003571,105.003571 C103.374892,106.632251 101.124892,107.63961 98.6396103,107.63961 L28.6396103,107.63961 C26.1543289,107.63961 23.9043289,106.632251 22.2756493,105.003571 C20.6469696,103.374892 19.6396103,101.124892 19.6396103,98.6396103 L19.6396103,28.6396103 C19.6396103,26.1543289 20.6469696,23.9043289 22.2756493,22.2756493 C23.9043289,20.6469696 26.1543289,19.6396103 28.6396103,19.6396103 Z" stroke-linejoin="square"></path>
+                    </g>
+                    <text id="语言指-令唤醒" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="26" fill="#2C2E58">
+                        <tspan x="39.6396103" y="54.6396103">语言指</tspan>
+                        <tspan x="39.6396103" y="80.6396103">令唤醒</tspan>
+                    </text>
+                </g>
+                <g transform="translate(167.6396, 48)">
+                    <g id="矩形-10备份">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-7)" xlink:href="#path-6"></use>
+                        <use fill="url(#linearGradient-5)" fill-rule="evenodd" xlink:href="#path-6"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-8)" xlink:href="#path-6"></use>
+                        <rect stroke="#FFFFFF" stroke-width="2" stroke-linejoin="square" x="1" y="1" width="158" height="132" rx="10"></rect>
+                    </g>
+                    <text id="子任务1" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="52.736" y="25">子任务1</tspan>
+                    </text>
+                    <rect id="矩形-11" fill="#E0E8F9" x="10" y="42" width="140" height="82" rx="6"></rect>
+                    <text id="前往物品领取区，识别二维码，调用大模型进" font-family="PingFangSC-Regular, PingFang SC" font-size="14" font-weight="normal" line-spacing="24" fill="#2C2E58">
+                        <tspan x="17" y="62">前往物品领取区，识</tspan>
+                        <tspan x="17" y="86">别二维码，调用大模</tspan>
+                        <tspan x="31" y="110">型进行货品筛选</tspan>
+                    </text>
+                </g>
+                <g id="编组备份-16" transform="translate(967.6396, 48)">
+                    <g id="矩形-10备份">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-10)" xlink:href="#path-9"></use>
+                        <use fill="url(#linearGradient-5)" fill-rule="evenodd" xlink:href="#path-9"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-11)" xlink:href="#path-9"></use>
+                        <rect stroke="#FFFFFF" stroke-width="2" stroke-linejoin="square" x="1" y="1" width="158" height="132" rx="10"></rect>
+                    </g>
+                    <text id="子任务5" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="51.2" y="25">子任务5</tspan>
+                    </text>
+                    <rect id="矩形-11" fill="#E0E8F9" x="10" y="42" width="140" height="82" rx="6"></rect>
+                    <text id="视觉巡线，在岔路口选择正确路径，抵达终点" font-family="PingFangSC-Regular, PingFang SC" font-size="14" font-weight="normal" line-spacing="24" fill="#2C2E58">
+                        <tspan x="17" y="62">视觉巡线，在岔路口</tspan>
+                        <tspan x="17" y="86">选择正确路径，抵达</tspan>
+                        <tspan x="66" y="110">终点</tspan>
+                    </text>
+                </g>
+                <g id="编组备份-14" transform="translate(567.6396, 60)">
+                    <g id="矩形-10备份">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-14)" xlink:href="#path-13"></use>
+                        <use fill="url(#linearGradient-12)" fill-rule="evenodd" xlink:href="#path-13"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-15)" xlink:href="#path-13"></use>
+                        <rect stroke="#FFFFFF" stroke-width="2" stroke-linejoin="square" x="1" y="1" width="158" height="108" rx="10"></rect>
+                    </g>
+                    <text id="子任务3" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="51.2" y="25">子任务3</tspan>
+                    </text>
+                    <rect id="矩形-11" fill="#E0E8F9" x="10" y="42" width="140" height="58" rx="6"></rect>
+                    <text id="触发并等待仿真协同任务完成" font-family="PingFangSC-Regular, PingFang SC" font-size="14" font-weight="normal" line-spacing="24" fill="#2C2E58">
+                        <tspan x="17" y="62">触发并等待仿真协同</tspan>
+                        <tspan x="52" y="86">任务完成</tspan>
+                    </text>
+                </g>
+                <g id="编组备份-15" transform="translate(767.6396, 60)">
+                    <g id="矩形-10备份">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-17)" xlink:href="#path-16"></use>
+                        <use fill="url(#linearGradient-12)" fill-rule="evenodd" xlink:href="#path-16"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-18)" xlink:href="#path-16"></use>
+                        <rect stroke="#FFFFFF" stroke-width="2" stroke-linejoin="square" x="1" y="1" width="158" height="108" rx="10"></rect>
+                    </g>
+                    <text id="子任务4" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="51.2" y="25">子任务4</tspan>
+                    </text>
+                    <rect id="矩形-11" fill="#E0E8F9" x="10" y="42" width="140" height="58" rx="6"></rect>
+                    <text id="进入-C-区，识别交通灯，做出路径决策" font-family="PingFangSC-Regular, PingFang SC" font-size="14" font-weight="normal" line-spacing="24" fill="#2C2E58">
+                        <tspan x="21.242" y="62">进入 C 区，识别交</tspan>
+                        <tspan x="17" y="86">通灯，做出路径决策</tspan>
+                    </text>
+                </g>
+                <g id="编组备份-13" transform="translate(367.6396, 0)">
+                    <g id="矩形-10备份">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-21)" xlink:href="#path-20"></use>
+                        <use fill="url(#linearGradient-19)" fill-rule="evenodd" xlink:href="#path-20"></use>
+                        <use fill="black" fill-opacity="1" filter="url(#filter-22)" xlink:href="#path-20"></use>
+                        <rect stroke="#FFFFFF" stroke-width="2" stroke-linejoin="square" x="1" y="1" width="158" height="204" rx="10"></rect>
+                    </g>
+                    <text id="子任务2" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="51.2" y="25">子任务2</tspan>
+                    </text>
+                    <rect id="矩形-11" fill="#E0E8F9" x="10" y="42" width="140" height="154" rx="6"></rect>
+                    <text id="进入生产区，动态避障，导航至正确仓库标识" font-family="PingFangSC-Regular, PingFang SC" font-size="14" font-weight="normal" line-spacing="24" fill="#2C2E58">
+                        <tspan x="17" y="62">进入生产区，动态避</tspan>
+                        <tspan x="17" y="86">障，导航至正确仓库</tspan>
+                        <tspan x="17" y="110">标识点，并驶入对应</tspan>
+                        <tspan x="17" y="134">的厂区停车点，播放</tspan>
+                        <tspan x="15.579" y="158">“已将[货品名称]放入</tspan>
+                        <tspan x="43.579" y="182">[仓库类别]”</tspan>
+                    </text>
+                </g>
+                <path id="线条" d="M159.13961,110.5 L168.13961,115 L159.13961,119.5 L159.139,115.5 L123.13961,115.5 L123.13961,114.5 L159.139,114.5 L159.13961,110.5 Z" fill="#657CAC" fill-rule="nonzero"></path>
+                <path id="线条备份-2" d="M359.13961,110.5 L368.13961,115 L359.13961,119.5 L359.139,115.5 L327.13961,115.5 L327.13961,114.5 L359.139,114.5 L359.13961,110.5 Z" fill="#657CAC" fill-rule="nonzero"></path>
+                <path id="线条备份-3" d="M559.13961,110.5 L568.13961,115 L559.13961,119.5 L559.139,115.5 L527.13961,115.5 L527.13961,114.5 L559.139,114.5 L559.13961,110.5 Z" fill="#657CAC" fill-rule="nonzero"></path>
+                <path id="线条备份-4" d="M759.13961,110.5 L768.13961,115 L759.13961,119.5 L759.139,115.5 L727.13961,115.5 L727.13961,114.5 L759.139,114.5 L759.13961,110.5 Z" fill="#657CAC" fill-rule="nonzero"></path>
+                <path id="线条备份-5" d="M959.13961,110.5 L968.13961,115 L959.13961,119.5 L959.139,115.5 L927.13961,115.5 L927.13961,114.5 L959.139,114.5 L959.13961,110.5 Z" fill="#657CAC" fill-rule="nonzero"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -120,8 +120,8 @@ namespace ucarController
     pravite_nh.param("ki_vy", ki_vy_, 0.2);
     pravite_nh.param("kd_vy", kd_vy_, 0.0);
     pravite_nh.param("kp_vth", kp_vth_, 1.0);
-    pravite_nh.param("ki_vth", ki_vth_, 0.3);
-    pravite_nh.param("kd_vth", kd_vth_, 0.0);
+    pravite_nh.param("ki_vth", ki_vth_, 0.1);
+    pravite_nh.param("kd_vth", kd_vth_, 0.05);
 
     // 积分抗饱和上限
     pravite_nh.param("integral_limit_vx", integral_limit_vx_, 0.5);
@@ -134,7 +134,7 @@ namespace ucarController
     pravite_nh.param("max_accel_th", max_accel_th_, 2.0);
 
     // cmd_vel 低通滤波系数 (1.0=无滤波, 越小越平滑)
-    pravite_nh.param("cmd_vel_filter_alpha", cmd_vel_filter_alpha_, 0.8);
+    pravite_nh.param("cmd_vel_filter_alpha", cmd_vel_filter_alpha_, 0.6);
 
     integral_vx_ = integral_vy_ = integral_vth_ = 0.0;
     last_error_vx_ = last_error_vy_ = last_error_vth_ = 0.0;
@@ -382,6 +382,38 @@ namespace ucarController
           angular_z = angular_speed_max_;
         else if (angular_z < -angular_speed_max_)
           angular_z = -angular_speed_max_;
+
+        // 每秒热重载 PID 参数，支持 rosparam set 运行时调参
+        {
+          static int reload_counter = 0;
+          if (++reload_counter >= rate_)  // rate_ Hz → 1 秒刷新一次
+          {
+            reload_counter = 0;
+            ros::NodeHandle pravite_nh("~");
+            bool prev_enable = enable_pid_;
+            pravite_nh.getParam("enable_pid", enable_pid_);
+            pravite_nh.getParam("kp_vx", kp_vx_);
+            pravite_nh.getParam("ki_vx", ki_vx_);
+            pravite_nh.getParam("kd_vx", kd_vx_);
+            pravite_nh.getParam("kp_vy", kp_vy_);
+            pravite_nh.getParam("ki_vy", ki_vy_);
+            pravite_nh.getParam("kd_vy", kd_vy_);
+            pravite_nh.getParam("kp_vth", kp_vth_);
+            pravite_nh.getParam("ki_vth", ki_vth_);
+            pravite_nh.getParam("kd_vth", kd_vth_);
+            pravite_nh.getParam("integral_limit_vx", integral_limit_vx_);
+            pravite_nh.getParam("integral_limit_vy", integral_limit_vy_);
+            pravite_nh.getParam("integral_limit_vth", integral_limit_vth_);
+            pravite_nh.getParam("cmd_vel_filter_alpha", cmd_vel_filter_alpha_);
+            // PID 从关→开时，重置积分防止突变
+            if (!prev_enable && enable_pid_)
+            {
+              integral_vx_ = integral_vy_ = integral_vth_ = 0.0;
+              last_error_vx_ = last_error_vy_ = last_error_vth_ = 0.0;
+              last_pid_time_ = ros::Time::now();
+            }
+          }
+        }
 
         // PID 闭环修正：用实际车速反馈补偿指令速度
         if (enable_pid_)
@@ -747,12 +779,14 @@ namespace ucarController
       {
         ROS_ERROR("AIcarController readLoop: %s\n", e.what());
         ROS_ERROR("AIcarController readLoop error, try to reopen serial port\n");
+        check_head_last[0] = 0xFF;  // 重置帧头状态，防止恢复后误匹配半个帧头
         setSerial();
         openSerial();
       }
       catch (...)
       {
         ROS_ERROR("AIcarController readLoop error, try to reopen serial port\n");
+        check_head_last[0] = 0xFF;  // 重置帧头状态，防止恢复后误匹配半个帧头
         setSerial();
         openSerial();
       }

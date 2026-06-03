@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="724px" height="550px" viewBox="0 0 724 550" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组</title>
+    <defs>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-1"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-2"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-3"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-4"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-5"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-6"></path>
+        <path d="M0,0 L512,0 L512,36 L0,36 L0,0 Z" id="path-7"></path>
+        <path d="M0,0 L512,0 L512,56 L0,56 L0,0 Z" id="path-8"></path>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="智能车竞赛-竞赛规则" transform="translate(-389, -2061)">
+            <g id="编组" transform="translate(390, 2062)">
+                <rect id="矩形-9" stroke="#0047FF" fill="#0047FF" x="0" y="0" width="722" height="40"></rect>
+                <text id="产品规格" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" fill="#FFFFFF">
+                    <tspan x="329" y="26">产品规格</tspan>
+                </text>
+                <rect id="矩形-9备份-12" stroke="#CFD6E6" x="0" y="420" width="210" height="128"></rect>
+                <rect id="矩形-9备份-6" stroke="#CFD6E6" x="0" y="204" width="210" height="216"></rect>
+                <rect id="矩形-9备份-2" stroke="#CFD6E6" x="0" y="96" width="210" height="108"></rect>
+                <rect id="矩形-9备份" stroke="#CFD6E6" x="0" y="40" width="210" height="56"></rect>
+                <g transform="translate(210, 96)">
+                    <rect id="矩形-9备份-25" stroke="#CFD6E6" x="0" y="0" width="512" height="36"></rect>
+                    <text id="俯仰-/-横滚（静态）：0.05°-RM" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">俯仰 / 横滚（静态）：0.05° RMS</tspan>
+                    </text>
+                </g>
+                <g transform="translate(210, 456)">
+                    <rect id="矩形-9备份-24" stroke="#CFD6E6" x="0" y="0" width="512" height="56"></rect>
+                    <text id="扫描距离：0.12m-16m（扫描频率" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="20" fill="#2C2E58">
+                        <tspan x="20" y="21">扫描距离：0.12m-16m（扫描频率 4000Hz），0.28m-16m（扫描频率 9000Hz），相对</tspan>
+                        <tspan x="20" y="41">误差为 2%；</tspan>
+                    </text>
+                </g>
+                <g transform="translate(210, 512)">
+                    <rect id="矩形-9备份-23" stroke="#CFD6E6" x="0" y="0" width="512" height="36"></rect>
+                    <text id="扫描角度：0°-360°，角度分辨率为" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">扫描角度：0°-360°，角度分辨率为 0.28°</tspan>
+                    </text>
+                </g>
+                <g transform="translate(210, 420)">
+                    <rect id="矩形-9备份-22" stroke="#CFD6E6" x="0" y="0" width="512" height="36"></rect>
+                    <text id="三角测距，频率：4000-9000Hz" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">三角测距，频率：4000-9000Hz</tspan>
+                    </text>
+                </g>
+                <g id="层叠-8" transform="translate(210, 384)" xlink:href="#path-1">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-1"></use>
+                    <text id="物距：45cm—100m" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">物距：45cm—100m</tspan>
+                    </text>
+                </g>
+                <g transform="translate(210, 348)">
+                    <rect id="矩形-9备份-20" stroke="#CFD6E6" x="0" y="0" width="512" height="36"></rect>
+                    <text id="F/NO-(Infinite)：2.6±" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">F/NO (Infinite)：2.6±5%</tspan>
+                    </text>
+                </g>
+                <g id="层叠-7" transform="translate(210, 312)" xlink:href="#path-2">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-2"></use>
+                    <text id="焦距：2.8mm" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">焦距：2.8mm</tspan>
+                    </text>
+                </g>
+                <g id="层叠-6" transform="translate(210, 276)" xlink:href="#path-3">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-3"></use>
+                    <text id="视场角：水平-FOV124.8°、垂直" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">视场角：水平 FOV124.8°、垂直 FOV67°、对角 FOV160°</tspan>
+                    </text>
+                </g>
+                <g id="层叠-4" transform="translate(210, 204)" xlink:href="#path-4">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-4"></use>
+                    <text id="工作原理：单目超广角" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">工作原理：单目超广角</tspan>
+                    </text>
+                </g>
+                <g id="层叠-5" transform="translate(210, 240)" xlink:href="#path-5">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-5"></use>
+                    <text id="彩色图像分辨率：1920*1080@30" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">彩色图像分辨率：1920*1080@30FPS、1280*720@30FPS、640*480@30FPS</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3" transform="translate(210, 132)" xlink:href="#path-6">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-6"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-6"></use>
+                    <text id="俯仰-/-横滚（动态）：0.1°-RMS" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">俯仰 / 横滚（动态）：0.1° RMS</tspan>
+                    </text>
+                </g>
+                <g id="层叠-2" transform="translate(210, 168)" xlink:href="#path-7">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-7"></use>
+                    <text id="绝对航向（磁辅助）：0.5°-RMS；速" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">绝对航向（磁辅助）：0.5° RMS；速度精度：±0.05m/s</tspan>
+                    </text>
+                </g>
+                <g id="层叠" transform="translate(210, 40)" xlink:href="#path-8">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-8"></use>
+                    <text id="6-个麦克风、360°-声源定位、5-米" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="20" fill="#2C2E58">
+                        <tspan x="20" y="21">6 个麦克风、360° 声源定位、5 米收音范围、USB 通信、支持自定义唤醒词、板载声源</tspan>
+                        <tspan x="20" y="41">定位及回声消除算法、支持实现全双工语音交互。</tspan>
+                    </text>
+                </g>
+                <text id="AI-传感器-1：环形-6MIC-阵列" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#2C2E58">
+                    <tspan x="26" y="67">AI 传感器 1：环形 6MIC 阵列</tspan>
+                </text>
+                <text id="AI-传感器-2：I-MU-姿态检测模块" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#2C2E58">
+                    <tspan x="16" y="149">AI 传感器 2：I MU 姿态检测模块</tspan>
+                </text>
+                <text id="AI-传感器-3：RGB-相机" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#2C2E58">
+                    <tspan x="41" y="311">AI 传感器 3：RGB 相机</tspan>
+                </text>
+                <text id="AI-传感器-4：激光雷达" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#2C2E58">
+                    <tspan x="44" y="483">AI 传感器 4：激光雷达</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>

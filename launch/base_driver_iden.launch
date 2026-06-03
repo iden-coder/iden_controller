@@ -1,8 +1,10 @@
 <launch>
-  <node pkg="iden_controller" name="base_driver_iden" type="iden_base_driver" output="screen" >
+  <!-- 基础底盘驱动（PID 关闭模式），如需 PID 请使用 cruise_pid.launch -->
+  <node pkg="iden_controller" name="base_driver_iden" type="iden_my_base_driver" output="screen" >
 
     <rosparam command="load" file="$(find iden_controller)/config/driver_params_ucarV2.yaml" />
+    <param name="enable_pid" value="false" />
     <!-- <rosparam command="load" file="$(find iden_controller)/config/driver_params_xiao.yaml" /> -->
   </node>
   <!-- <node pkg="joy" name="joy_node" type="joy_node"/> -->
-</launch> 
+</launch>

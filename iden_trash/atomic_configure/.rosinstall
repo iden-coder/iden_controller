@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/ucar/instant_ws/devel_isolated/my_planner/setup.sh

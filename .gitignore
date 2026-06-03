@@ -18,3 +18,7 @@ __pycache__/
 # Compiled objects
 *.o
 *.so
+
+# Trash and temp
+.Trash-1000/
+.catkin_tools/

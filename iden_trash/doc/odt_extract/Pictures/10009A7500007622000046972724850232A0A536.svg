@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1142px" height="682px" viewBox="0 0 1142 682" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组</title>
+    <defs>
+        <path d="M0,0 L210,0 L210,40 L0,40 L0,0 Z" id="path-1"></path>
+        <path d="M0,0 L200,0 L200,40 L0,40 L0,0 Z" id="path-2"></path>
+        <path d="M0,0 L530,0 L530,40 L0,40 L0,0 Z" id="path-3"></path>
+        <path d="M0,0 L200,0 L200,40 L0,40 L0,0 Z" id="path-4"></path>
+        <path d="M0,0 L210,0 L210,144 L0,144 L0,0 Z" id="path-5"></path>
+        <path d="M0,0 L210,0 L210,108 L0,108 L0,0 Z" id="path-6"></path>
+        <path d="M0,0 L210,0 L210,72 L0,72 L0,0 Z" id="path-7"></path>
+        <path d="M0,0 L210,0 L210,108 L0,108 L0,0 Z" id="path-8"></path>
+        <path d="M0,0 L210,0 L210,100 L0,100 L0,0 Z" id="path-9"></path>
+        <path d="M0,0 L210,0 L210,108 L0,108 L0,0 Z" id="path-10"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-11"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-12"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-13"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-14"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-15"></path>
+        <path d="M0,0 L530,0 L530,64 L0,64 L0,0 Z" id="path-16"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-17"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-18"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-19"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-20"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-21"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-22"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-23"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-24"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-25"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-26"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-27"></path>
+        <path d="M0,0 L530,0 L530,36 L0,36 L0,0 Z" id="path-28"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-29"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-30"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-31"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-32"></path>
+        <path d="M0,0 L200,0 L200,64 L0,64 L0,0 Z" id="path-33"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-34"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-35"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-36"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-37"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-38"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-39"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-40"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-41"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-42"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-43"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-44"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-45"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-46"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-47"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-48"></path>
+        <path d="M0,0 L200,0 L200,64 L0,64 L0,0 Z" id="path-49"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-50"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-51"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-52"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-53"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-54"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-55"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-56"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-57"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-58"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-59"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-60"></path>
+        <path d="M0,0 L200,0 L200,36 L0,36 L0,0 Z" id="path-61"></path>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="智能车竞赛-竞赛规则" transform="translate(-389, -6211)">
+            <g id="编组" transform="translate(390, 6212)">
+                <g id="层叠-9" xlink:href="#path-1">
+                    <use stroke="#E9F0FF" stroke-width="1" fill="#0047FF" fill-rule="evenodd" xlink:href="#path-1"></use>
+                    <text id="扣分环节" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" fill="#FFFFFF">
+                        <tspan x="73" y="26">扣分环节</tspan>
+                    </text>
+                </g>
+                <g id="层叠-9备份" transform="translate(210, 0)" xlink:href="#path-2">
+                    <use stroke="#E9F0FF" stroke-width="1" fill="#0047FF" fill-rule="evenodd" xlink:href="#path-2"></use>
+                    <text id="扣分项说明" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" fill="#FFFFFF">
+                        <tspan x="60" y="26">扣分项说明</tspan>
+                    </text>
+                </g>
+                <g id="层叠-9备份-2" transform="translate(410, 0)" xlink:href="#path-3">
+                    <use stroke="#E9F0FF" stroke-width="1" fill="#0047FF" fill-rule="evenodd" xlink:href="#path-3"></use>
+                    <text id="判定标准" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" fill="#FFFFFF">
+                        <tspan x="233" y="26">判定标准</tspan>
+                    </text>
+                </g>
+                <g id="层叠-9备份-3" transform="translate(940, 0)" xlink:href="#path-4">
+                    <use stroke="#E9F0FF" stroke-width="1" fill="#E8735B" fill-rule="evenodd" xlink:href="#path-4"></use>
+                    <text id="扣分值" font-family="PingFangSC-Medium, PingFang SC" font-size="16" font-weight="400" fill="#FFFFFF">
+                        <tspan x="76" y="26">扣分值</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10" transform="translate(0, 40)" xlink:href="#path-5">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-5"></use>
+                    <text id="通用规则" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#2C2E58">
+                        <tspan x="81" y="71">通用规则</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10备份" transform="translate(0, 184)" xlink:href="#path-6">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-6"></use>
+                    <text id="子任务1-(智能接单与货品筛选)" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="24" fill="#2C2E58">
+                        <tspan x="84.552" y="43">子任务1</tspan>
+                        <tspan x="47.004" y="67">(智能接单与货品筛选)</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10备份-2" transform="translate(0, 292)" xlink:href="#path-7">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-7"></use>
+                    <text id="子任务2-(仓库匹配与动态避障)" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="24" fill="#2C2E58">
+                        <tspan x="83.4" y="25">子任务2</tspan>
+                        <tspan x="47.004" y="49">(仓库匹配与动态避障)</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10备份-3" transform="translate(0, 364)" xlink:href="#path-8">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-8"></use>
+                    <text id="子任务3-(仿真系统协同)" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="24" fill="#2C2E58">
+                        <tspan x="83.4" y="43">子任务3</tspan>
+                        <tspan x="65.004" y="67">(仿真系统协同)</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10备份-4" transform="translate(0, 472)" xlink:href="#path-9">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-9"></use>
+                    <text id="子任务4-(交通决策与路径选择)" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="24" fill="#2C2E58">
+                        <tspan x="83.4" y="39">子任务4</tspan>
+                        <tspan x="47.004" y="63">(交通决策与路径选择)</tspan>
+                    </text>
+                </g>
+                <g id="层叠-10备份-5" transform="translate(0, 572)" xlink:href="#path-10">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-10"></use>
+                    <text id="子任务5-(视觉巡线及终点抵达)" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="24" fill="#2C2E58">
+                        <tspan x="83.4" y="43">子任务5</tspan>
+                        <tspan x="47.004" y="67">(视觉巡线及终点抵达)</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3" transform="translate(210, 40)" xlink:href="#path-11">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-11"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-11"></use>
+                    <text id="G1.-抢跑" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">G1. 抢跑</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-34" transform="translate(410, 644)" xlink:href="#path-12">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-12"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-12"></use>
+                    <text id="未正常播报或播报格式错误。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未正常播报或播报格式错误。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-33" transform="translate(410, 608)" xlink:href="#path-13">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-13"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-13"></use>
+                    <text id="未在比赛结束前返回终点(P1/P2点)停" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未在比赛结束前返回终点(P1/P2点)停稳。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-32" transform="translate(410, 572)" xlink:href="#path-14">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-14"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-14"></use>
+                    <text id="未按照巡线路径行进或压线。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未按照巡线路径行进或压线。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-31" transform="translate(410, 536)" xlink:href="#path-15">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-15"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-15"></use>
+                    <text id="错误识别交通标志，或驶入错误巡线入口。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">错误识别交通标志，或驶入错误巡线入口。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-30" transform="translate(410, 472)" xlink:href="#path-16">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-16"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-16"></use>
+                    <text id="未按照“车辆车头需朝向交通信号灯，且车头" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未按照“车辆车头需朝向交通信号灯，且车头距离停止线≤10cm，同时车轮不可压线或越过停</tspan>
+                        <tspan x="20" y="45">止线”停车。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-29" transform="translate(410, 436)" xlink:href="#path-17">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-17"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-17"></use>
+                    <text id="仿真任务完成后，未按要求格式播报或播报内" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">仿真任务完成后，未按要求格式播报或播报内容错误。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-28" transform="translate(410, 400)" xlink:href="#path-18">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-18"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-18"></use>
+                    <text id="仿真中机械臂未取到正确物品或未放置到正确" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">仿真中机械臂未取到正确物品或未放置到正确仓库。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-27" transform="translate(410, 364)" xlink:href="#path-19">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-19"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-19"></use>
+                    <text id="未抵达正确仓库标识点区域。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未抵达正确仓库标识点区域。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-26" transform="translate(410, 328)" xlink:href="#path-20">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-20"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-20"></use>
+                    <text id="抵达正确位置但播报的仓库类别错误。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">抵达正确位置但播报的仓库类别错误。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-25" transform="translate(410, 292)" xlink:href="#path-21">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-21"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-21"></use>
+                    <text id="未抵达正确仓库标识点区域。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未抵达正确仓库标识点区域。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-24" transform="translate(410, 256)" xlink:href="#path-22">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-22"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-22"></use>
+                    <text id="播报货品不属于指令大类或播报格式错误。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">播报货品不属于指令大类或播报格式错误。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-23" transform="translate(410, 220)" xlink:href="#path-23">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-23"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-23"></use>
+                    <text id="未能正确识别任一指定二维码。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未能正确识别任一指定二维码。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-22" transform="translate(410, 184)" xlink:href="#path-24">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-24"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-24"></use>
+                    <text id="未按照抽取要求的话术唤醒小车。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未按照抽取要求的话术唤醒小车。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-21" transform="translate(410, 148)" xlink:href="#path-25">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-25"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-25"></use>
+                    <text id="碰撞到挡板、锥桶、红绿灯。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">碰撞到挡板、锥桶、红绿灯。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-20" transform="translate(410, 112)" xlink:href="#path-26">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-26"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-26"></use>
+                    <text id="未按照“十、硬件设计规范”制作电子红绿灯" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">未按照“十、硬件设计规范”制作电子红绿灯，按点扣分，最多扣10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-19" transform="translate(410, 76)" xlink:href="#path-27">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-27"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-27"></use>
+                    <text id="总时长达到规定时间仍未完成所有任务。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">总时长达到规定时间仍未完成所有任务。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-2" transform="translate(410, 40)" xlink:href="#path-28">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-28"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-28"></use>
+                    <text id="在裁判发令前启动车模。" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">在裁判发令前启动车模。</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-18" transform="translate(210, 644)" xlink:href="#path-29">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-29"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-29"></use>
+                    <text id="5.3-最终播报错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">5.3 最终播报错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-17" transform="translate(210, 608)" xlink:href="#path-30">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-30"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-30"></use>
+                    <text id="5.2-未抵达终点" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">5.2 未抵达终点</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-16" transform="translate(210, 572)" xlink:href="#path-31">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-31"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-31"></use>
+                    <text id="5.1-循迹压线" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">5.1 循迹压线</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-15" transform="translate(210, 536)" xlink:href="#path-32">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-32"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-32"></use>
+                    <text id="4.2-视觉识别或决策错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">4.2 视觉识别或决策错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-14" transform="translate(210, 472)" xlink:href="#path-33">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-33"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-33"></use>
+                    <text id="4.1-停止线前停车规范" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="31">4.1 停止线前停车规范</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-13" transform="translate(210, 436)" xlink:href="#path-34">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-34"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-34"></use>
+                    <text id="3.3-播报错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">3.3 播报错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-12" transform="translate(210, 400)" xlink:href="#path-35">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-35"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-35"></use>
+                    <text id="3.2-仿真任务未完成" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">3.2 仿真任务未完成</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-11" transform="translate(210, 364)" xlink:href="#path-36">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-36"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-36"></use>
+                    <text id="3.1-仓库匹配错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">3.1 仓库匹配错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-10" transform="translate(210, 328)" xlink:href="#path-37">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-37"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-37"></use>
+                    <text id="2.2-播报错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">2.2 播报错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-9" transform="translate(210, 292)" xlink:href="#path-38">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-38"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-38"></use>
+                    <text id="2.1-仓库匹配错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">2.1 仓库匹配错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-8" transform="translate(210, 256)" xlink:href="#path-39">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-39"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-39"></use>
+                    <text id="1.3-大模型筛选错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">1.3 大模型筛选错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-7" transform="translate(210, 220)" xlink:href="#path-40">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-40"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-40"></use>
+                    <text id="1.2-二维码识别错误" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">1.2 二维码识别错误</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-6" transform="translate(210, 184)" xlink:href="#path-41">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-41"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-41"></use>
+                    <text id="1.1-语音唤醒" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">1.1 语音唤醒</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-5" transform="translate(210, 148)" xlink:href="#path-42">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-42"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-42"></use>
+                    <text id="G4.-触碰障碍物含挡板" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">G4. 触碰障碍物含挡板</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-4" transform="translate(210, 112)" xlink:href="#path-43">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-43"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-43"></use>
+                    <text id="G3.-未按要求制作电子红绿灯" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">G3. 未按要求制作电子红绿灯</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份" transform="translate(210, 76)" xlink:href="#path-44">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-44"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-44"></use>
+                    <text id="G2.-比赛超时" font-family="PingFangSC-Regular, PingFang SC" font-size="12" font-weight="normal" line-spacing="28" fill="#2C2E58">
+                        <tspan x="20" y="17">G2. 比赛超时</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-50" transform="translate(940, 644)" xlink:href="#path-45">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-45"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-45"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-49" transform="translate(940, 608)" xlink:href="#path-46">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-46"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-46"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-48" transform="translate(940, 572)" xlink:href="#path-47">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-47"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-47"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-47" transform="translate(940, 536)" xlink:href="#path-48">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-48"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-48"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-46" transform="translate(940, 472)" xlink:href="#path-49">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-49"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-49"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="31">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-45" transform="translate(940, 436)" xlink:href="#path-50">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-50"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-50"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-44" transform="translate(940, 400)" xlink:href="#path-51">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-51"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-51"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-43" transform="translate(940, 364)" xlink:href="#path-52">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-52"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-52"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-42" transform="translate(940, 328)" xlink:href="#path-53">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-53"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-53"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-41" transform="translate(940, 292)" xlink:href="#path-54">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-54"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-54"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-40" transform="translate(940, 256)" xlink:href="#path-55">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-55"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-55"></use>
+                    <text id="-15分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-15分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-39" transform="translate(940, 220)" xlink:href="#path-56">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-56"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-56"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-38" transform="translate(940, 184)" xlink:href="#path-57">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-57"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-57"></use>
+                    <text id="-5分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-37" transform="translate(940, 148)" xlink:href="#path-58">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-58"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-58"></use>
+                    <text id="-5分（最多扣20分）" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-5分（最多扣20分）</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-36" transform="translate(940, 112)" xlink:href="#path-59">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-59"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-59"></use>
+                    <text id="-10分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">-10分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-35" transform="translate(940, 76)" xlink:href="#path-60">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-60"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-60"></use>
+                    <text id="按已完成状态计分" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">按已完成状态计分</tspan>
+                    </text>
+                </g>
+                <g id="层叠-3备份-3" transform="translate(940, 40)" xlink:href="#path-61">
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-61"></use>
+                    <use stroke="#CFD6E6" stroke-width="1" xlink:href="#path-61"></use>
+                    <text id="第一次警告-、第二次取消资格" font-family="PingFangSC-Medium, PingFang SC" font-size="12" font-weight="400" line-spacing="28" fill="#E8735B">
+                        <tspan x="20" y="17">第一次警告 、第二次取消资格</tspan>
+                    </text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

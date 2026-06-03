@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="244px" height="290px" viewBox="0 0 244 290" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组</title>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="智能车竞赛-竞赛规则" transform="translate(-1229, -1646)">
+            <g id="编组" transform="translate(1229, 1646)">
+                <g fill="#1D2088">
+                    <rect id="矩形-7" x="0" y="0" width="68.647343" height="290"></rect>
+                    <rect id="矩形-7备份" x="72.1497585" y="0" width="91.294686" height="290"></rect>
+                    <rect id="矩形-7备份-2" x="167.647343" y="0" width="76.352657" height="290"></rect>
+                </g>
+                <g transform="translate(68.2971, 34.3237)">
+                    <text id="420.00-mm" font-family="PingFangSC-Medium, PingFang SC" font-size="12.6086957" font-weight="400" fill="#F0FF00">
+                        <tspan x="16.4613527" y="132.782609">420.00 mm</tspan>
+                    </text>
+                    <line x1="0.350241546" y1="128.888889" x2="15.0603865" y2="128.888889" id="线条" stroke="#005CC7" stroke-width="1.40096618"></line>
+                    <line x1="85.1086957" y1="128.888889" x2="99.8188406" y2="128.888889" id="线条备份" stroke="#005CC7" stroke-width="1.40096618"></line>
+                    <polyline id="路径" stroke="#00873A" stroke-width="1.40096618" points="109.069065 255.676329 109.069065 0 175.702899 0"></polyline>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

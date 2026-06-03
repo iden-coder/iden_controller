@@ -562,12 +562,14 @@ namespace ucarController
             {
                 ROS_ERROR("AIcarController readLoop: %s\n", e.what());
                 ROS_ERROR("AIcarController readLoop error, try to reopen serial port\n");
+                check_head_last[0] = 0xFF;  // 重置帧头状态，防止恢复后误匹配半个帧头
                 setSerial();
                 openSerial();
             }
             catch (...)
             {
                 ROS_ERROR("AIcarController readLoop error, try to reopen serial port\n");
+                check_head_last[0] = 0xFF;  // 重置帧头状态，防止恢复后误匹配半个帧头
                 setSerial();
                 openSerial();
             }

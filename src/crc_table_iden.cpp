@@ -149,21 +149,11 @@ uint16_t CRC16_Table(uint8_t *p, uint8_t counter)
 
 uint32_t CRC32_Table(uint8_t *p, uint8_t counter)
 {
-    uint16_t crc32 = 0;
+    uint32_t crc32 = 0xFFFFFFFF;
     for (int i = 0; i < counter; i++)
     {
         uint8_t value = p[i];
-        crc32 = CRC16Table[((crc32 >> 8) ^ value) & 0xff] ^ (crc32 << 8);
+        crc32 = CRC32Table[(crc32 ^ value) & 0xff] ^ (crc32 >> 8);
     }
-    return (crc32);
+    return crc32 ^ 0xFFFFFFFF;
 }
-
-
-// uint32_t crc32( uint8_t *buf, uint32_t size)
-// {
-//      uint32_t i, crc;
-//      crc = 0xFFFFFFFF;
-//      for (i = 0; i < size; i++)
-//       crc = crc32tab[(crc ^ buf[i]) & 0xff] ^ (crc >> 8);
-//      return crc^0xFFFFFFFF;
-// }
