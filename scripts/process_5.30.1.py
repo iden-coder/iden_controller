@@ -1,244 +1,298 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+定点巡航脚本 — 防卡死版本
+
+核心策略：
+  每个导航点只尝试 1 次，硬超时 20s。超时或卡死 → 直接跳到下一个点，绝不原地死等。
+  卡死判定：每 3 秒检查 odom 移动距离，< 0.08m 即认为卡死。
+  代价地图只在切换导航点时清一次，避免反复清图破坏规划。
+"""
 
 import rospy
 import actionlib
 import signal
 import sys
-import tf2_ros
+import math
+import time
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseWithCovarianceStamped, Twist
-from actionlib_msgs.msg import GoalID
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
+from actionlib_msgs.msg import GoalID, GoalStatus
 from std_srvs.srv import Empty
 
 
-# ---------------------------- 全局共享变量 ----------------------------
-class SharedVariables:
+# ============================================================
+#  全局状态
+# ============================================================
+class State:
     def __init__(self):
-        self.move_base = None  # 等 init_node 后再创建
-        self.tf_buffer = None
-        self.tf_listener = None
+        self.client = None
+        self.odom_x = 0.0
+        self.odom_y = 0.0
+        self.odom_dist = 0.0       # 本轮累计移动距离
+        self.odom_prev = (0.0, 0.0) # 上一帧位置
 
-        self.nav_point = {
-            "s0":  [1.54,  0.0,   0.0, 0.0, 0.0, 0.0, 1.0],
-            "s0t":  [1.54,  0.0,   0.0, 0.0, 0.0, -0.7071, 0.7071],
-            
-            "s1":  [1.68, -0.42,  0.0, 0.0, 0.0, -0.7071, 0.7071],
-            "s1t":  [1.68, -0.42,  0.0, 0.0, 0.0, 0.0, 1.0],
-
-            "s2":  [2.07, -0.42,  0.0, 0.0, 0.0, 0.0, 1.0],
-            "s2t":  [2.07, -0.42,  0.0, 0.0, 0.0, 0.7071, 0.7071],
-
-            "s3":  [2.12, 0.01,  0.0, 0.0, 0.0, 0.7071, 0.7071],
-            "s3t": [2.12, 0.01,  0.0, 0.0, 0.0, 0.0, 1.0],
-
-            "s4":  [3.10, -0.01,  0.0, 0.0, 0.0, 0.0, 1.0],
-            "s4t": [3.10, -0.01,  0.0, 0.0, 0.0, -0.7071, 0.7071],
-
-            "s5":  [3.15, -0.42,  0.0, 0.0, 0.0, -0.7071, 0.7071],
-
-            "s6":  [3.13, -0.89,  0.0, 0.0, 0.0, -0.7071, 0.7071],
-            "s6t": [3.13, -0.89, 0.0, 0.0, 0.0, 1.0, 0.0],
-
-            "s7":  [3.13, -0.91,  0.0, 0.0, 0.0, 1.0, 0.0],
-
-            "s8":  [2.03, -0.95,  0.0, 0.0, 0.0, 1.0, 0.0],
-
-            "s9":  [1.18, -0.95,  0.0, 0.0, 0.0, 1.0, 0.0],
-            "s9t":  [1.18, -0.95,  0.0, 0.0, 0.0, 0.7071, 0.7071],
-
-            "s10": [1.07, -0.54,  0.0, 0.0, 0.0, -0.7071, 0.707],
-            "s10t": [1.07, -0.54,  0.0, 0.0, 0.0, 1.0, 0.0],
-
-            "s11": [0.228, -0.537, 0.0, 0.0, 0.0, 1.0, 0.0],
-
-            "s12": [-0.143, -0.13, 0.0, 0.0, 0.0, 1.0, 0.0],
+        self.nav_points = {
+            "s0":   [1.07,   0.0,    0.0, 0.0, 0.0, 0.0,      1.0],
+            "s0t":  [1.07,  -0.05,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s1":   [1.09,  -0.395,  0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s1t":  [1.22,  -0.395,  0.0, 0.0, 0.0, 0.0,      1.0],
+            "s2":   [1.57,  -0.395,  0.0, 0.0, 0.0, 0.0,      1.0],
+            "s2t":  [1.57,  -0.355,  0.0, 0.0, 0.0, 0.7071,   0.7071],
+            "s3":   [1.57,   -0.01,   0.0, 0.0, 0.0, 0.7071,   0.7071],
+            "s3t":  [1.75,   -0.01,   0.0, 0.0, 0.0, 0.0,      1.0],
+            "s4":   [2.62,  -0.01,   0.0, 0.0, 0.0, 0.0,      1.0],
+            "s4t":  [2.62,  -0.06,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s5":   [2.62,  -0.42,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s6":   [2.62,  -0.99,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s6t":  [2.47,  -0.99,   0.0, 0.0, 0.0, 1.0,      0.0],
+            "s7":   [2.13,  -0.99,   0.0, 0.0, 0.0, 1.0,      0.0],
+            "s8":   [1.53,  -0.99,   0.0, 0.0, 0.0, 1.0,      0.0],
+            "s9":   [0.63,  -0.99,   0.0, 0.0, 0.0, 1.0,      0.0],
+            "s9t":  [0.63,  -0.94,   0.0, 0.0, 0.0, 0.7071,   0.7071],
+            "s10":  [0.63,  -0.55,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s10t": [0.48,  -0.55,   0.0, 0.0, 0.0, 1.0,      0.0],
+            "s11":  [-0.344, -0.55,  0.0, 0.0, 0.0, 1.0,      0.0],
+            "s12":  [-0.344, -0.985, 0.0, 0.0, 0.0, 1.0,      0.0],
         }
 
-SV = SharedVariables()
+        self.patrol_path = [
+            "s0", "s0t", "s1", "s1t", "s2", "s2t", "s3", "s3t",
+            "s4", "s4t", "s5", "s6", "s6t", "s7", "s8",
+            "s9", "s9t", "s10", "s10t", "s11", "s12",
+        ]
 
 
-# ---------------------------- 初始化 ----------------------------
-def init_move_base():
-    SV.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
-    if not SV.move_base.wait_for_server(rospy.Duration(5)):
-        rospy.logerr("无法连接 move_base action server")
-        sys.exit(1)
-    rospy.loginfo("move_base action server 已连接")
-    send_initialpose()
-
-def send_initialpose():
-    pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=10)
-    initial_pose = PoseWithCovarianceStamped()
-    initial_pose.header.frame_id = "map"
-    initial_pose.header.stamp = rospy.Time.now()
-    initial_pose.pose.pose.position.x = 0.0
-    initial_pose.pose.pose.position.y = 0.0
-    initial_pose.pose.pose.position.z = 0.0
-    initial_pose.pose.pose.orientation.x = 0.0
-    initial_pose.pose.pose.orientation.y = 0.0
-    initial_pose.pose.pose.orientation.z = 0.0
-    initial_pose.pose.pose.orientation.w = 1.0
-    rospy.sleep(1)
-    pub.publish(initial_pose)
-    rospy.loginfo("已发送初始位姿")
-
-def init_tf_listener():
-    SV.tf_buffer = tf2_ros.Buffer()
-    SV.tf_listener = tf2_ros.TransformListener(SV.tf_buffer)
-    rospy.sleep(1.0)
-    rospy.loginfo("TF 监听器已初始化")
+S = State()
 
 
-# ---------------------------- 工具函数 ----------------------------
-def reset_navigation():
-    """取消当前导航目标并清除代价地图"""
-    # 先通过 action client 取消
-    SV.move_base.cancel_all_goals()
-    # 再发 cancel topic 确保送达
-    cancel_pub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=10)
-    rospy.sleep(0.2)  # 等 publisher 建立连接
-    cancel_msg = GoalID()
-    cancel_pub.publish(cancel_msg)
-    rospy.loginfo("Current navigation goal canceled.")
+# ============================================================
+#  odom 回调
+# ============================================================
+def cb_odom(msg):
+    x = msg.pose.pose.position.x
+    y = msg.pose.pose.position.y
 
-    # 重置代价地图
-    rospy.wait_for_service('/move_base/clear_costmaps')
+    px, py = S.odom_prev
+    d = math.hypot(x - px, y - py)
+    S.odom_dist += d
+    S.odom_prev = (x, y)
+    S.odom_x = x
+    S.odom_y = y
+
+
+# ============================================================
+#  action 状态 → 可读字符串
+# ============================================================
+STATUS_NAMES = {
+    GoalStatus.PENDING:    "PENDING",
+    GoalStatus.ACTIVE:     "ACTIVE",
+    GoalStatus.PREEMPTED:  "PREEMPTED",
+    GoalStatus.SUCCEEDED:  "SUCCEEDED",
+    GoalStatus.ABORTED:    "ABORTED",
+    GoalStatus.REJECTED:   "REJECTED",
+    GoalStatus.RECALLED:   "RECALLED",
+    GoalStatus.LOST:       "LOST",
+}
+
+
+def goal_state_name(state):
+    return STATUS_NAMES.get(state, f"UNKNOWN({state})")
+
+
+# ============================================================
+#  清除代价地图
+# ============================================================
+def clear_costmaps():
     try:
-        clear_costmaps = rospy.ServiceProxy('/move_base/clear_costmaps', Empty)
-        clear_costmaps()
-        rospy.loginfo("Costmaps cleared.")
-    except rospy.ServiceException as e:
-        rospy.logerr("Service call failed: %s", e)
+        rospy.wait_for_service('/move_base/clear_costmaps', timeout=2.0)
+        srv = rospy.ServiceProxy('/move_base/clear_costmaps', Empty)
+        srv()
+        rospy.loginfo("  代价地图已清除")
+    except Exception as e:
+        rospy.logwarn(f"  清除代价地图失败: {e}")
 
-def recovery_back_up():
-    """轻微前后晃动 + 小角度转向，适合 0.5m 窄赛道"""
-    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    rospy.sleep(0.2)
 
-    rospy.loginfo("Recovery: 轻微后退...")
-    cmd = Twist()
-    cmd.linear.x = -0.1
-    pub.publish(cmd)
-    rospy.sleep(0.8)  # 退 ~8cm
+# ============================================================
+#  取消所有导航目标
+# ============================================================
+def cancel_all():
+    S.client.cancel_all_goals()
+    # 补一刀 topic 确保送达
+    pub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=10)
+    rospy.sleep(0.1)
+    pub.publish(GoalID())
 
-    rospy.loginfo("Recovery: 小角度转向...")
-    cmd.linear.x = 0.0
-    cmd.angular.z = 0.3
-    pub.publish(cmd)
-    rospy.sleep(1.0)  # 转 ~17°
 
-    rospy.loginfo("Recovery: 轻微前进...")
-    cmd.angular.z = 0.0
-    cmd.linear.x = 0.1
-    pub.publish(cmd)
-    rospy.sleep(0.8)  # 进 ~8cm
+# ============================================================
+#  发送初始位姿
+# ============================================================
+def send_initial_pose():
+    pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=10)
+    rospy.sleep(0.5)
+    msg = PoseWithCovarianceStamped()
+    msg.header.frame_id = "map"
+    msg.header.stamp = rospy.Time.now()
+    msg.pose.pose.orientation.w = 1.0
+    pub.publish(msg)
+    rospy.loginfo("初始位姿已发送")
 
-    pub.publish(Twist())
-    rospy.loginfo("Recovery done.")
 
-def send_nav_point_and_wait(target_pose_list, waypoint_timeout=12, max_retries=3):
-    """发送导航点，超时或失败后自动恢复重试，超过次数跳过"""
-    if len(target_pose_list) != 7:
-        rospy.logerr(f"导航点列表长度错误: {len(target_pose_list)}")
-        return False
+# ============================================================
+#  核心：去一个点，永不卡死
+#  - hard_timeout:     总超时秒数 (到时间直接放弃)
+#  - stuck_window:      卡死检测窗口秒数
+#  - stuck_min_dist:    窗口内最低移动距离，低于此值 → 卡死
+# ============================================================
+def goto_point(name, pose7,
+               hard_timeout=15.0,
+               stuck_window=4.0,
+               stuck_min_dist=0.08):
+    """
+    发送一个导航目标，轮询等待直到:
+      1. move_base 报告成功 → return True
+      2. move_base 报告失败 → return False
+      3. 总超时 → return False
+      4. 卡死(移动量不足) → return False
 
-    name = "unknown"
-    for k, v in SV.nav_point.items():
-        if v == target_pose_list:
-            name = k
-            break
-
+    绝不重试，绝不阻塞超过 hard_timeout 秒。
+    """
     goal = MoveBaseGoal()
-    goal.target_pose.header.frame_id = 'map'
+    goal.target_pose.header.frame_id = "map"
     goal.target_pose.header.stamp = rospy.Time.now()
-    goal.target_pose.pose = Pose(Point(*target_pose_list[:3]),
-                                 Quaternion(*target_pose_list[3:]))
+    goal.target_pose.pose = Pose(
+        Point(pose7[0], pose7[1], pose7[2]),
+        Quaternion(pose7[3], pose7[4], pose7[5], pose7[6]))
 
-    for attempt in range(1, max_retries + 1):
-        if rospy.is_shutdown():
+    # ---- 重置本轮里程计 ----
+    S.odom_dist = 0.0
+    S.odom_prev = (S.odom_x, S.odom_y)
+    stuck_dist_at = 0.0       # 卡死窗口起点时的累计距离
+    stuck_time_at = time.time()
+    start_t = time.time()
+
+    rospy.loginfo(f"  [{name}] 发目标 x={pose7[0]:.3f} y={pose7[1]:.3f} timeout={hard_timeout}s")
+
+    S.client.send_goal(goal)
+
+    rate = rospy.Rate(4)  # 4Hz 轮询
+    while not rospy.is_shutdown():
+        now_t = time.time()
+        elapsed = now_t - start_t
+
+        # ---- 检查 action 状态 ----
+        state = S.client.get_state()
+        if state == GoalStatus.SUCCEEDED:
+            rospy.loginfo(f"  [{name}] ✓ 到达 (移动 {S.odom_dist:.2f}m, 耗时 {elapsed:.1f}s)")
+            return True
+        if state in (GoalStatus.ABORTED, GoalStatus.REJECTED,
+                     GoalStatus.RECALLED, GoalStatus.PREEMPTED):
+            rospy.logwarn(f"  [{name}] ✗ move_base 终止 (state={goal_state_name(state)})")
             return False
 
-        rospy.loginfo(f"前往 {name} (第 {attempt}/{max_retries} 次尝试)")
-        SV.move_base.send_goal(goal)
+        # ---- 硬超时 ----
+        if elapsed >= hard_timeout:
+            rospy.logwarn(f"  [{name}] ✗ 超时 {hard_timeout}s (移动 {S.odom_dist:.2f}m)")
+            return False
 
-        # 带超时的等待
-        finished = SV.move_base.wait_for_result(rospy.Duration(waypoint_timeout))
+        # ---- 卡死检测 ----
+        window_elapsed = now_t - stuck_time_at
+        if window_elapsed >= stuck_window:
+            moved_in_window = S.odom_dist - stuck_dist_at
+            if moved_in_window < stuck_min_dist:
+                rospy.logwarn(f"  [{name}] ✗ 卡死! {stuck_window}s 内仅移动 {moved_in_window:.3f}m (总移动 {S.odom_dist:.2f}m)")
+                return False
+            # 未卡死，重置窗口
+            stuck_dist_at = S.odom_dist
+            stuck_time_at = now_t
 
-        if finished:
-            result = SV.move_base.get_result()
-            if result:
-                rospy.loginfo(f"成功到达 {name}")
-                return True
+        rate.sleep()
 
-        # 超时或失败 → 取消 + 恢复
-        rospy.logwarn(f"{name} 超时/失败，取消目标并恢复...")
-        SV.move_base.cancel_all_goals()
-        rospy.sleep(0.3)
-
-        if attempt < max_retries:
-            reset_navigation()
-            recovery_back_up()
-            rospy.sleep(1)
-
-    rospy.logerr(f"{name} 尝试 {max_retries} 次后仍失败，跳过此点")
     return False
 
-def signal_handler(sig, frame):
-    rospy.loginfo("收到中断信号，正在退出...")
-    SV.move_base.cancel_all_goals()
-    reset_navigation()          # 彻底清理
-    rospy.signal_shutdown("用户终止")
+
+# ============================================================
+#  主巡航逻辑
+# ============================================================
+def cruise():
+    total = len(S.patrol_path)
+    ok_count = 0
+    fail_list = []
+
+    for idx, name in enumerate(S.patrol_path):
+        if rospy.is_shutdown():
+            break
+
+        if name not in S.nav_points:
+            rospy.logerr(f"[{name}] 不在 nav_points 中，跳过")
+            fail_list.append(name)
+            continue
+
+        rospy.loginfo(f"--- [{idx+1}/{total}] {name} ---")
+        pose = S.nav_points[name]
+
+        success = goto_point(name, pose)
+
+        if success:
+            ok_count += 1
+        else:
+            fail_list.append(name)
+            # 失败后清理：取消目标 + 清代价地图，为下个点做准备
+            cancel_all()
+            rospy.sleep(0.3)
+            clear_costmaps()
+            rospy.sleep(0.5)
+
+        # 点与点之间短暂停一下，让机器人稳定
+        rospy.sleep(0.3)
+
+    rospy.loginfo("=" * 50)
+    rospy.loginfo(f"巡航结束: 成功 {ok_count}/{total}, 失败 {len(fail_list)}")
+    if fail_list:
+        rospy.loginfo(f"失败点: {', '.join(fail_list)}")
+    rospy.loginfo("=" * 50)
+
+
+# ============================================================
+#  信号处理
+# ============================================================
+def on_shutdown(sig=None, frame=None):
+    rospy.loginfo("正在退出...")
+    try:
+        cancel_all()
+    except:
+        pass
+    rospy.signal_shutdown("user_exit")
     sys.exit(0)
 
 
-# ---------------------------- 定点巡航任务 ----------------------------
-def cruise_points(points):
-    rospy.loginfo(f"开始定点巡航，共 {len(points)} 个点")
-    skipped = 0
-    for name in points:
-        if rospy.is_shutdown():
-            break
-        if name not in SV.nav_point:
-            rospy.logerr(f"导航点 '{name}' 不存在，跳过")
-            continue
-        ok = send_nav_point_and_wait(SV.nav_point[name])
-        if not ok:
-            skipped += 1
-        rospy.sleep(0.5)
-    rospy.loginfo(f"定点巡航完成 (跳过 {skipped} 个点)")
-
-
-# ---------------------------- 主程序 ----------------------------
+# ============================================================
+#  main
+# ============================================================
 if __name__ == '__main__':
     rospy.init_node('cruise_mode')
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, on_shutdown)
 
-    rospy.loginfo("初始化 move_base ...")
-    init_move_base()
+    # --- 连接 move_base ---
+    rospy.loginfo("连接 move_base action server ...")
+    S.client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+    if not S.client.wait_for_server(rospy.Duration(5)):
+        rospy.logerr("无法连接 move_base!")
+        sys.exit(1)
+    rospy.loginfo("move_base 已连接")
 
-    rospy.loginfo("初始化 TF 监听器 ...")
-    init_tf_listener()
+    # --- 发初始位姿 ---
+    send_initial_pose()
 
-    rospy.sleep(2)
+    # --- 订阅 odom ---
+    rospy.Subscriber('/odom', Odometry, cb_odom)
+    rospy.sleep(1.0)
+    rospy.loginfo("odom 监听就绪")
+
+    rospy.sleep(1.0)
     rospy.loginfo("开始巡航")
-
-    patrol_path = [
-        "s0", "s0t",          # 到位 → 转朝 -y
-        "s1", "s1t",          # 到位 → 转朝 +x
-        "s2", "s2t",          # 到位 → 转朝 +y
-        "s3", "s3t",          # 到位 → 转朝 +x
-        "s4", "s4t",          # 到位 → 转朝 -y
-        "s5",
-        "s6", "s6t",          # 到位 → 转朝 -x
-        "s7", "s8",
-        "s9", "s9t",          # 到位 → 转朝 +y
-        "s10", "s10t",        # 到位 → 转朝 -x
-        "s11",
-        "s12",
-    ]
-
-    cruise_points(patrol_path)
-    rospy.loginfo("任务结束，节点保持运行...")
+    cruise()
+    rospy.loginfo("任务结束，节点保持运行 (Ctrl-C 退出)")
     rospy.spin()

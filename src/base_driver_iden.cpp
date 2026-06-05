@@ -111,30 +111,36 @@ namespace ucarController
 
     void baseBringup::setSerial()
     {
-        try
+        const int MAX_RETRIES = 10;
+        for (int retry = 0; retry < MAX_RETRIES; retry++)
         {
-            serial_.setPort(port_);
-            serial_.setBaudrate(baud_);
-            serial_.setFlowcontrol(serial::flowcontrol_none);
-            serial_.setParity(serial::parity_none); // default is parity_none
-            serial_.setStopbits(serial::stopbits_one);
-            serial_.setBytesize(serial::eightbits);
-            serial::Timeout time_out = serial::Timeout::simpleTimeout(serial_timeout_);
-            serial_.setTimeout(time_out);
-            // serial_.open();
+            try
+            {
+                serial_.setPort(port_);
+                serial_.setBaudrate(baud_);
+                serial_.setFlowcontrol(serial::flowcontrol_none);
+                serial_.setParity(serial::parity_none); // default is parity_none
+                serial_.setStopbits(serial::stopbits_one);
+                serial_.setBytesize(serial::eightbits);
+                serial::Timeout time_out = serial::Timeout::simpleTimeout(serial_timeout_);
+                serial_.setTimeout(time_out);
+                return;  // 成功，退出
+                // serial_.open();
+            }
+            catch (const std::exception &e)
+            {
+                ROS_ERROR("AIcarController setSerial failed (retry %d/%d): %s",
+                          retry + 1, MAX_RETRIES, e.what());
+            }
+            catch (...)
+            {
+                ROS_ERROR("AIcarController setSerial failed with unknow reason (retry %d/%d)",
+                          retry + 1, MAX_RETRIES);
+            }
+            ros::Duration(cmd_dt_threshold_).sleep();
         }
-        catch (const std::exception &e)
-        {
-            ROS_ERROR("AIcarController setSerial failed, try again!");
-            ROS_ERROR("AIcarController setSerial: %s", e.what());
-            setSerial();
-        }
-        catch (...)
-        {
-            ROS_ERROR("AIcarController setSerial failed with unknow reason, try again!");
-            setSerial();
-        }
-        ros::Duration(cmd_dt_threshold_).sleep();
+        ROS_ERROR("AIcarController setSerial: all %d retries exhausted", MAX_RETRIES);
+    }
     }
 
     void baseBringup::openSerial()

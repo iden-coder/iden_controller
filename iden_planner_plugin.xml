@@ -1,0 +1,14 @@
+<library path="lib/libiden_planner">
+  <class name="iden_planner/IdenPlanner"
+         type="iden_planner::IdenPlanner"
+         base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      IdenPlanner: 高性能局部规划器
+      - 角度-速度耦合控制（转角自动降速）
+      - 双向自动导航（前进/倒车智能切换）
+      - PID 带积分抗饱和 + 航点重置
+      - 全部参数支持 rosparam 运行时热重载
+      - 代价地图可视化
+    </description>
+  </class>
+</library>

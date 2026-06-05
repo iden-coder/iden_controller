@@ -2,34 +2,12 @@
   <!-- ===== 定点巡航 PID 模式 =====
        用法: roslaunch iden_controller cruise_pid.launch
              rosrun iden_controller process_5.30.1.py
+
+       等价于: roslaunch ucar_nav ucar_navigation_pid.launch
+       区别:  此文件可直接从 iden_controller 包启动，
+              无需知道 ucar_nav 的 launch 文件名
   -->
-  <param name="initial_pose_x" value="0.0"/>
-  <param name="initial_pose_y" value="0.0"/>
-  <param name="initial_pose_z" value="0.0"/>
 
-  <!-- 底盘驱动: PID 闭环版本 -->
-  <include file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
-
-  <!-- 激光雷达 -->
-  <include file="$(find ydlidar)/launch/ydlidar.launch" />
-
-  <!-- 地图服务 -->
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find ucar_nav)/maps/5.4.1.yaml" output="screen">
-    <param name="frame_id" value="map" />
-  </node>
-
-  <!-- AMCL 定位 -->
-  <include file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
-
-  <!-- move_base: 全局规划 + my_planner 局部规划 -->
-  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
-    <param name="base_local_planner" value="my_planner/MyPlanner"/>
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_planner_params.yaml" command="load" />
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/teb_local_planner_params.yaml" command="load" />
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_costmap_params.yaml" command="load" />
-  </node>
+  <!-- 委托给 ucar_nav 的 PID 导航启动文件 -->
+  <include file="$(find ucar_nav)/launch/ucar_navigation_pid.launch" />
 </launch>

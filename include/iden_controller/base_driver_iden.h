@@ -57,6 +57,8 @@ using namespace std;
                                 0, 0, 0, 0, 1e6, 0,\
                                 0, 0, 0, 0, 0, 1e-9}
 
+// 注意：此包从 ucar_controller fork 而来，为保持与历史固件兼容，
+// 命名空间沿用 ucarController（未改为 idenController），CRC/数据帧结构也保持一致。
 namespace ucarController
 {
 #define Pi 3.1415926

@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 
 find_package(Eigen3 REQUIRED)
 set(Eigen3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   genmsg
@@ -18,6 +19,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   serial
   roslib
+  nav_core
+  pluginlib
+  costmap_2d
 )
 
 ## Generate messages in the 'msg' folder
@@ -64,7 +68,8 @@ include_directories(
   include ${catkin_INCLUDE_DIRS}
 # include
   ${catkin_INCLUDE_DIRS}
-  ${Eigen3_INCLUDE_DIRS} 
+  ${Eigen3_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 include_directories(include)
@@ -81,3 +86,44 @@ target_link_libraries(iden_my_base_driver iden_crc_table_fd ${catkin_LIBRARIES} 
 
 ## iden_crc_table_fd
 add_library(iden_crc_table_fd src/crc_table_iden.cpp)
+
+## ===== IdenPlanner: 高性能局部规划器插件 =====
+add_library(iden_planner
+  src/iden_planner.cpp
+)
+add_dependencies(iden_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(iden_planner
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+## 安装插件描述文件
+install(FILES
+  iden_planner_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+## 安装 iden_planner 库
+install(TARGETS iden_planner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+## ===== 单元测试 =====
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  find_package(cv_bridge REQUIRED)
+
+  # IdenPlanner 核心算法测试
+  catkin_add_gtest(test_iden_planner
+    test/test_iden_planner.cpp
+  )
+  target_link_libraries(test_iden_planner
+    iden_planner
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${cv_bridge_LIBRARIES}
+  )
+  add_dependencies(test_iden_planner ${${PROJECT_NAME}_EXPORTED_TARGETS})
+endif()

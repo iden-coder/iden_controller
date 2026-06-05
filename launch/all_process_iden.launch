@@ -6,8 +6,8 @@
     <!-- 启动语音命令节点 -->
     <!-- <include file="$(find speech_command)/launch/speech_command.launch" /> -->
 
-    <!-- 启动导航节点 -->
-    <include file="$(find ucar_nav)/launch/ucar_navigation_test.launch" />
+    <!-- 启动导航节点 (PID闭环驱动 + IdenPlanner局部规划) -->
+    <include file="$(find ucar_nav)/launch/ucar_navigation_pid.launch" />
 
     <!-- 启动跟随节点 -->
     <!-- <node name="follow_node" pkg="flow_test" type="follow_test" output="log" /> -->
