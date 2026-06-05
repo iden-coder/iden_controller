@@ -1,0 +1,70 @@
+<launch>
+  <!-- ===== 简化全局规划巡航模式 =====
+       用法: roslaunch iden_controller cruise_navfn.launch
+             rosrun iden_controller process_navfn.py
+
+       全局规划器: navfn/NavfnROS (路径更直)
+       局部规划器: iden_planner/IdenPlanner
+  -->
+
+  <include file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
+  <include file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node name="map_server" pkg="map_server" type="map_server"
+        args="$(find ucar_nav)/maps/6.3.1.yaml" output="screen">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <include file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_global_planner" value="navfn/NavfnROS"/>
+    <param name="base_local_planner" value="iden_planner/IdenPlanner"/>
+
+    <param name="navfn/NavfnROS/allow_unknown" value="true"/>
+    <param name="navfn/NavfnROS/default_tolerance" value="0.5"/>
+
+    <!-- IdenPlanner 参数 -->
+    <param name="iden_planner/IdenPlanner/kp" value="3.2"/>
+    <param name="iden_planner/IdenPlanner/ki" value="0.02"/>
+    <param name="iden_planner/IdenPlanner/kd" value="0.03"/>
+    <param name="iden_planner/IdenPlanner/integral_limit" value="0.5"/>
+    <param name="iden_planner/IdenPlanner/lookahead_dist" value="0.35"/>
+    <param name="iden_planner/IdenPlanner/angle_power" value="1.5"/>
+    <param name="iden_planner/IdenPlanner/angle_full_speed_deg" value="0.0"/>
+    <param name="iden_planner/IdenPlanner/angle_zero_speed_deg" value="90.0"/>
+    <param name="iden_planner/IdenPlanner/enable_bidirectional" value="true"/>
+    <param name="iden_planner/IdenPlanner/long_lookahead" value="0.5"/>
+    <param name="iden_planner/IdenPlanner/reverse_vote_ratio" value="0.7"/>
+    <param name="iden_planner/IdenPlanner/reverse_confirm_frames" value="3"/>
+    <param name="iden_planner/IdenPlanner/max_linear_vel" value="0.8"/>
+    <param name="iden_planner/IdenPlanner/min_linear_vel" value="-0.8"/>
+    <param name="iden_planner/IdenPlanner/max_angular_vel" value="1.5"/>
+    <param name="iden_planner/IdenPlanner/linear_gain" value="4.0"/>
+    <param name="iden_planner/IdenPlanner/pose_dist_threshold" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/pos_deadband" value="0.05"/>
+    <param name="iden_planner/IdenPlanner/yaw_deadband" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/angle_adjust_gain" value="2.5"/>
+    <param name="iden_planner/IdenPlanner/slow_zone" value="0.2"/>
+    <param name="iden_planner/IdenPlanner/min_adjust_speed" value="0.12"/>
+    <param name="iden_planner/IdenPlanner/pose_tolerance" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/pose_adjust_timeout" value="10.0"/>
+    <param name="iden_planner/IdenPlanner/pose_adjust_max_linear" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/collision_check_count" value="10"/>
+    <param name="iden_planner/IdenPlanner/collision_cooldown_max" value="20"/>
+    <param name="iden_planner/IdenPlanner/collision_replan_max" value="2"/>
+    <param name="iden_planner/IdenPlanner/enable_visualization" value="false"/>
+    <param name="iden_planner/IdenPlanner/enable_costmap_pub" value="false"/>
+
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml"
+              command="load" ns="global_costmap" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml"
+              command="load" ns="local_costmap" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_planner_params.yaml"
+              command="load" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/local_costmap_params.yaml"
+              command="load" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_costmap_params.yaml"
+              command="load" />
+  </node>
+</launch>
