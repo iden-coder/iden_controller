@@ -17,7 +17,7 @@ import math
 import time
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseWithCovarianceStamped
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import Odometry
 from actionlib_msgs.msg import GoalID, GoalStatus
 from std_srvs.srv import Empty
@@ -36,12 +36,12 @@ class State:
             "s0t":  [1.07,  -0.05,   0.0, 0.0, 0.0, -0.7071,  0.7071],
             "s1":   [1.08,  -0.395,  0.0, 0.0, 0.0, -0.7071,  0.7071],
             "s1t":  [1.08,  -0.395,  0.0, 0.0, 0.0, 0.0,      1.0],
-            "s2":   [1.55,  -0.395,  0.0, 0.0, 0.0, 0.0,      1.0],
-            "s2t":  [1.55,  -0.395,  0.0, 0.0, 0.0, 0.7071,   0.7071],
-            "s3":   [1.55,   -0.04,   0.0, 0.0, 0.0, 0.7071,   0.7071],
-            "s3t":  [1.55,   -0.04,   0.0, 0.0, 0.0, 0.0,      1.0],
-            "s4":   [2.55,  -0.02,   0.0, 0.0, 0.0, 0.0,      1.0],
-            "s4t":  [2.57,  -0.02,   0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s2":   [1.53,  -0.395,  0.0, 0.0, 0.0, 0.0,      1.0],
+            "s2t":  [1.53,  -0.395,  0.0, 0.0, 0.0, 0.7071,   0.7071],
+            "s3":   [1.53,   -0.036,   0.0, 0.0, 0.0, 0.7071,   0.7071],
+            "s3t":  [1.53,   -0.036,   0.0, 0.0, 0.0, 0.0,      1.0],
+            "s4":   [2.55,  0.00,   0.0, 0.0, 0.0, 0.0,      1.0],
+            "s4t":  [2.57,  0.00,   0.0, 0.0, 0.0, -0.7071,  0.7071],
             "s5":   [2.61,  -0.42,   0.0, 0.0, 0.0, -0.7071,  0.7071],
             "s6":   [2.61,  -1.05,   0.0, 0.0, 0.0, -0.7071,  0.7071],
             "s6t":  [2.52,  -1.05,   0.0, 0.0, 0.0, 1.0,      0.0],
@@ -52,15 +52,15 @@ class State:
             "s10":  [0.63,  -0.63,   0.0, 0.0, 0.0, 0.7071,  0.7071],
             "s10t": [0.63,  -0.63,   0.0, 0.0, 0.0, 1.0,      0.0],
             "s11":  [0.25, -0.63,  0.0, 0.0, 0.0, 1.0,      0.0],
-            "s12":  [-0.04, -0.73, 0.0, 0.0, 0.0, -0.9239,  0.3827],
-            "s13":  [-0.304, -1.02, 0.0, 0.0, 0.0, 1.0,   0.0],
-            "s14":  [-0.344, -1.03, 0.0, 0.0, 0.0, 1.0,   0.0],
+            "s12":  [-0.04, -0.83, 0.0, 0.0, 0.0, -0.7071,  0.7071],
+            "s13":  [-0.33, -1.00, 0.0, 0.0, 0.0, 1.0,   0.0],
+            "s15":  [-1.5, -0.4,  0.0, 0.0, 0.0, 1.0,   0.0],
         }
 
         self.patrol_path = [
             "s0", "s0t", "s1", "s1t", "s2", "s2t", "s3", "s3t",
             "s4", "s4t", "s6", "s6t",
-            "s9", "s9t", "s10", "s10t", "s11", "s12","s13","s14",
+            "s9", "s9t", "s10", "s10t", "s11", "s12", "s13", "s15",
         ]
 
 
@@ -94,6 +94,27 @@ def goal_state_name(state):
     return STATUS_NAMES.get(state, f"UNKNOWN({state})")
 
 
+def force_move_x(distance, speed=0.15, direction=-1):
+    """强制向 x 方向移动 distance 米，绕过 move_base。direction: 1=+x, -1=-x"""
+    duration = abs(distance) / speed
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    rospy.sleep(0.2)
+    twist = Twist()
+    twist.linear.x = direction * speed
+    dir_name = '+x' if direction > 0 else '-x'
+    rospy.loginfo(f"  强制 {dir_name} 移动 {distance}m @ {speed}m/s, 耗时 {duration:.1f}s")
+    start = time.time()
+    rate = rospy.Rate(20)
+    while time.time() - start < duration and not rospy.is_shutdown():
+        pub.publish(twist)
+        rate.sleep()
+    # 刹车
+    twist.linear.x = 0.0
+    for _ in range(5):
+        pub.publish(twist)
+        rospy.sleep(0.02)
+    rospy.loginfo("  强制移动完成")
+
 def clear_costmaps():
     try:
         rospy.wait_for_service('/move_base/clear_costmaps', timeout=2.0)
@@ -125,7 +146,8 @@ def send_initial_pose():
 def goto_point(name, pose7,
                hard_timeout=10.0,
                stuck_window=3.0,
-               stuck_min_dist=0.08):
+               stuck_min_dist=0.08,
+               skip_stuck=False):
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = "map"
     goal.target_pose.header.stamp = rospy.Time.now()
@@ -164,8 +186,11 @@ def goto_point(name, pose7,
         if window_elapsed >= stuck_window:
             moved_in_window = S.odom_dist - stuck_dist_at
             if moved_in_window < stuck_min_dist:
-                rospy.logwarn(f"  [{name}] ✗ 卡死! {stuck_window}s 内仅移动 {moved_in_window:.3f}m")
-                return False
+                if skip_stuck:
+                    rospy.logwarn(f"  [{name}] 卡死但继续走...")
+                else:
+                    rospy.logwarn(f"  [{name}] ✗ 卡死! {stuck_window}s 内仅移动 {moved_in_window:.3f}m")
+                    return False
             stuck_dist_at = S.odom_dist
             stuck_time_at = now_t
 
@@ -189,7 +214,8 @@ def cruise():
 
         rospy.loginfo(f"--- [{idx+1}/{total}] {name} ---")
         pose = S.nav_points[name]
-        success = goto_point(name, pose)
+        is_last = (idx == total - 1)
+        success = goto_point(name, pose, skip_stuck=is_last)
 
         if success:
             ok_count += 1
@@ -199,6 +225,9 @@ def cruise():
             rospy.sleep(0.3)
             clear_costmaps()
             rospy.sleep(0.5)
+
+        if name == "s13":
+            force_move_x(0.60, speed=0.5, direction=1)  # 不管是否到达，硬向东 60cm
 
         rospy.sleep(0.3)
 
