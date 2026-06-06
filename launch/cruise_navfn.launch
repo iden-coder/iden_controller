@@ -27,7 +27,7 @@
     <!-- IdenPlanner 参数 -->
     <param name="iden_planner/IdenPlanner/kp" value="3.2"/>
     <param name="iden_planner/IdenPlanner/ki" value="0.02"/>
-    <param name="iden_planner/IdenPlanner/kd" value="0.03"/>
+    <param name="iden_planner/IdenPlanner/kd" value="0.07"/>
     <param name="iden_planner/IdenPlanner/integral_limit" value="0.5"/>
     <param name="iden_planner/IdenPlanner/lookahead_dist" value="0.35"/>
     <param name="iden_planner/IdenPlanner/angle_power" value="1.5"/>
@@ -43,11 +43,11 @@
     <param name="iden_planner/IdenPlanner/linear_gain" value="4.0"/>
     <param name="iden_planner/IdenPlanner/pose_dist_threshold" value="0.10"/>
     <param name="iden_planner/IdenPlanner/pos_deadband" value="0.05"/>
-    <param name="iden_planner/IdenPlanner/yaw_deadband" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/yaw_deadband" value="0.03"/>
     <param name="iden_planner/IdenPlanner/angle_adjust_gain" value="2.5"/>
     <param name="iden_planner/IdenPlanner/slow_zone" value="0.2"/>
     <param name="iden_planner/IdenPlanner/min_adjust_speed" value="0.12"/>
-    <param name="iden_planner/IdenPlanner/pose_tolerance" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/pose_tolerance" value="0.03"/>
     <param name="iden_planner/IdenPlanner/pose_adjust_timeout" value="10.0"/>
     <param name="iden_planner/IdenPlanner/pose_adjust_max_linear" value="0.10"/>
     <param name="iden_planner/IdenPlanner/collision_check_count" value="10"/>

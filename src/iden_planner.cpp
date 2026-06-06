@@ -570,9 +570,10 @@ bool IdenPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // 2b. 选择预瞄点
     geometry_msgs::PoseStamped target = selectLookaheadTarget();
 
-    // 2b2. 碰撞检测：仅检测致命障碍物 (cost==254 LETHAL_OBSTACLE)
-    //       最多触发 collision_replan_max_ 次重规划，超过后减速通过不断重规划
-    bool collision_slow_down = false;  // 重规划次数用尽后减速标记
+    // 2b2. 两级碰撞检测：
+    //       致命区 (cost>=254 LETHAL): 停车+重规划(限2次)，超过→减速到30%
+    //       危险区 (cost>=253 INSCRIBED): 仅减速到40%，不触发重规划，避免死锁
+    double collision_speed_factor = 1.0;  // 1.0=全速, 0.4=危险区, 0.3=致命区超限
     {
         costmap_2d::Costmap2D* costmap = costmap_ros_ ? costmap_ros_->getCostmap() : nullptr;
         if (costmap)
@@ -591,7 +592,8 @@ bool IdenPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
         int check_end = std::min((int)global_plan_.size(),
                                  target_index_ + collision_check_count_);
-        bool collision_found = false;
+        bool collision_lethal = false;
+        bool collision_danger = false;
         for (int i = target_index_; i < check_end; i++)
         {
             geometry_msgs::PoseStamped pose_global;
@@ -610,22 +612,26 @@ bool IdenPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
             if (mx < size_x && my < size_y)
             {
                 unsigned char cost = costmap_data[my * size_x + mx];
-                // 仅检测 LETHAL_OBSTACLE (254)，不检测膨胀层 INSCRIBED_INFLATED (253)
-                // 膨胀层由 costmap 自身的评分机制处理，不应在此硬停车
+                // 致命区：LETHAL_OBSTACLE (254) — 优先处理
                 if (cost >= 254)
                 {
-                    collision_found = true;
+                    collision_lethal = true;
                     break;
+                }
+                // 危险区：INSCRIBED_INFLATED (253) — 减速但不重规划
+                if (cost >= 253)
+                {
+                    collision_danger = true;
                 }
             }
         }
 
-        if (collision_found)
+        if (collision_lethal)
         {
-            // 冷却期内不做任何处理，继续正常行驶
+            // 致命区：冷却期内不处理
             if (collision_cooldown_ > 0)
             {
-                // 不触发重规划，不减速，继续行驶
+                // 冷却中，继续正常行驶
             }
             else if (collision_replan_count_ < collision_replan_max_)
             {
@@ -641,16 +647,23 @@ bool IdenPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
             }
             else
             {
-                // 重规划次数用尽：不再触发重规划，仅减速到 30% 缓慢通过
+                // 重规划次数用尽：减速到 30%
                 ROS_WARN_THROTTLE(1.0,
-                    "IdenPlanner: 重规划次数用尽，减速通过 (replan=%d)",
+                    "IdenPlanner: 致命区重规划用尽，减速通过 (replan=%d)",
                     collision_replan_count_);
-                collision_slow_down = true;
+                collision_speed_factor = 0.3;
             }
+        }
+        else if (collision_danger)
+        {
+            // 危险区 (INSCRIBED_INFLATED): 减速到 40%，不触发重规划
+            ROS_WARN_THROTTLE(1.0,
+                "IdenPlanner: 进入障碍物膨胀区，减速缓行");
+            collision_speed_factor = 0.4;
         }
         else
         {
-            // 路径前方安全，重置重规划计数器（连续计数才有效）
+            // 路径前方安全，重置重规划计数器
             if (collision_cooldown_ <= 0)
                 collision_replan_count_ = 0;
         }
@@ -700,11 +713,11 @@ bool IdenPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     cmd_vel.linear.x  = desired_linear;
     cmd_vel.angular.z = desired_angular;
 
-    // 碰撞减速：重规划次数用尽后，速度降至 30%
-    if (collision_slow_down)
+    // 碰撞减速：致命区超限→30%, 危险区→40%
+    if (collision_speed_factor < 1.0)
     {
-        cmd_vel.linear.x  *= 0.3;
-        cmd_vel.angular.z *= 0.5;
+        cmd_vel.linear.x  *= collision_speed_factor;
+        cmd_vel.angular.z *= collision_speed_factor;
     }
 
     // 2i. 路径可视化（仅在 enable_visualization_ 时弹出 OpenCV 窗口）
