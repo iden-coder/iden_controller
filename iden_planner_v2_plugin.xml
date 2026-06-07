@@ -1,0 +1,15 @@
+<library path="lib/libiden_planner_v2">
+  <class name="iden_planner_v2/IdenPlannerV2"
+         type="iden_planner_v2::IdenPlannerV2"
+         base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      IdenPlannerV2: 增强版局部规划器
+      - 继承 IdenPlanner 全部特性（PID/角度-速度耦合/双向导航/位姿微调/参数热重载）
+      - 【新增】前向时序碰撞检测 + 足印检查
+      - 【新增】轨迹采样 + 多维度评分（障碍物/路径偏差/目标进度）
+      - 【新增】速度平滑（加速度/减速度约束）
+      - 【新增】智能恢复（被困时原地旋转寻找安全方向）
+      - 全部新增参数支持 rosparam 运行时热重载
+    </description>
+  </class>
+</library>

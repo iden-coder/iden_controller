@@ -127,3 +127,44 @@ if(CATKIN_ENABLE_TESTING)
   )
   add_dependencies(test_iden_planner ${${PROJECT_NAME}_EXPORTED_TARGETS})
 endif()
+
+## ===== IdenPlannerV2: 增强版局部规划器插件 =====
+add_library(iden_planner_v2
+  src/iden_planner_v2.cpp
+)
+add_dependencies(iden_planner_v2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(iden_planner_v2
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+## 安装 V2 插件描述文件
+install(FILES
+  iden_planner_v2_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+## 安装 V2 iden_planner_v2 库
+install(TARGETS iden_planner_v2
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+## ===== Theta* 全局规划器 (移植自 Navigation2) =====
+add_library(theta_star_planner
+  src/theta_star_planner.cpp
+)
+add_dependencies(theta_star_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(theta_star_planner ${catkin_LIBRARIES})
+
+install(FILES
+  theta_star_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(TARGETS theta_star_planner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)

@@ -1,0 +1,13 @@
+<library path="lib/libtheta_star_planner">
+  <class name="theta_star_ros/ThetaStarPlanner"
+         type="theta_star_ros::ThetaStarPlanner"
+         base_class_type="nav_core::BaseGlobalPlanner">
+    <description>
+      Theta* 全局规划器 (移植自 Navigation2)
+      - 视线检测(LOS): 两点间无障碍则走直线，绕过锥桶
+      - 8邻域搜索: 含对角线方向
+      - 任意角度路径: 比 A* 路径更短更直
+      - 适合锥桶等稀疏但分布随机的障碍物场景
+    </description>
+  </class>
+</library>
