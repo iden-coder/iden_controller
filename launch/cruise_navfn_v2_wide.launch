@@ -157,7 +157,7 @@
       inflation_layer:
         enabled: true
         cost_scaling_factor: 10.0
-        inflation_radius: 0.05
+        inflation_radius: 0.045
       static_layer:
         enabled: true
     </rosparam>
@@ -182,7 +182,7 @@
       inflation_layer:
         enabled: true
         cost_scaling_factor: 10.0
-        inflation_radius: 0.05
+        inflation_radius: 0.045
       static_layer:
         enabled: true
     </rosparam>

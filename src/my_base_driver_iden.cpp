@@ -1232,7 +1232,7 @@ namespace ucarController
       pose_2d.theta = yaw;
       mag_pose_pub_.publish(pose_2d);
       // double M_PI = 3.14159265358979323846;
-      ROS_INFO("Roll: %.2f, Pitch: %.2f, Yaw: %.2f (degrees)", roll * 180.0 / M_PI, pitch * 180.0 / M_PI, yaw * 180.0 / M_PI);
+      // ROS_INFO("Roll: %.2f, Pitch: %.2f, Yaw: %.2f (degrees)", roll * 180.0 / M_PI, pitch * 180.0 / M_PI, yaw * 180.0 / M_PI);
     }
   }
 
@@ -1266,7 +1266,7 @@ namespace ucarController
     float yaw = mahonyFilter.getYaw();
 
     // 打印姿态�?�度
-    ROS_INFO("Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll, pitch, yaw);
+    // ROS_INFO("Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll, pitch, yaw);
   }
 
   void baseBringup::magCalculateYaw(double roll, double pitch, double &magyaw, double magx, double magy, double magz)

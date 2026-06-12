@@ -1,0 +1,8 @@
+<launch>
+  <!-- 语音触发巡航: roslaunch iden_controller cruise_voice.launch
+       注意: 必须先 kill 掉其他 ROS 进程, 避免节点冲突 -->
+  <include file="$(find iden_controller)/launch/cruise_navfn_v2_wide.launch" />
+  <node pkg="speech_command" type="speech_command_node" name="speech_command_node" output="screen" />
+  <node pkg="speech_command" type="spark_llm_node.py" name="spark_llm_node" output="screen" />
+  <node pkg="iden_controller" type="cruise_voice.py" name="cruise_voice" output="screen" />
+</launch>

@@ -2,12 +2,5 @@
 roslaunch iden_controller cruise_navfn.launch
 rosrun iden_controller process_navfn.py
 
--0.85,-1.41
-
--1.73 -2.57
-
-0.41 -1.6
-
-2.54 -2.81
-
-0.163 -3.25
+roslaunch iden_controller cruise_navfn_v2_wide.launch
+rosrun iden_controller cruise_demo.py

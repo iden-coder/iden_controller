@@ -55,7 +55,7 @@ class State:
             "d2t":   [ 0.41, -1.60, 0,  0, 0, -0.7071, 0.7071],
             "d3":    [ 2.54, -2.81, 0,  0, 0, -0.7071, 0.7071],
             "d3t":   [ 2.54, -2.81, 0,  0, 0,  0.9239, 0.3827],
-            "d4":    [ 0.173,-3.25, 0,  0, 0, -0.7071, 0.7071],
+            "d4":    [ 0.373,-3.55, 0,  0, 0, -0.7071, 0.7071],
         }
 
         # ---- 锥桶区中间航点 (d1→d2 穿行引导) ----
@@ -88,8 +88,8 @@ S = State()
 # ===== 精确到点 / 靠墙点 / 严格朝向参数 =====
 # 靠墙点不能让 move_base 一直做最终朝向调整，否则会把墙当障碍原地转圈。
 # 本节点采用：位置进容差 -> cancel move_base -> 自己严格原地对准目标yaw -> 停车等待。
-WALL_GOAL_NAMES = set(rospy.get_param("~wall_goal_names", ["d1", "d2"]))
-NORMAL_GOAL_XY_TOL = rospy.get_param("~goal_xy_tolerance", 0.12)
+WALL_GOAL_NAMES = set(rospy.get_param("~wall_goal_names", ["d1", "d2", "d3", "d4"]))
+NORMAL_GOAL_XY_TOL = rospy.get_param("~goal_xy_tolerance", 0.08)
 WALL_GOAL_XY_TOL = rospy.get_param("~wall_goal_xy_tolerance", 0.08)
 STRICT_FINAL_YAW = rospy.get_param("~strict_final_yaw", True)
 FINAL_YAW_TOL_DEG = rospy.get_param("~final_yaw_tolerance_deg", 2.0)
@@ -101,8 +101,10 @@ TURN_AFTER_POINTS = {"d1": "d1t", "d2": "d2t", "d3": "d3t"}
 
 # 卡死恢复：先倒退约10cm，清除代价地图，再重新规划/必要时反应式避障。
 BACKUP_ON_STUCK = rospy.get_param("~backup_on_stuck", True)
-BACKUP_DIST = rospy.get_param("~backup_dist", 0.13)
+BACKUP_DIST = rospy.get_param("~backup_dist", 0.10)
 BACKUP_SPEED = rospy.get_param("~backup_speed", -0.08)
+# 倒退安全阈值：后方最近障碍 <= 5cm 时，立即禁止/停止倒退
+REAR_OBSTACLE_STOP_DIST = rospy.get_param("~rear_obstacle_stop_dist", 0.05)
 HEADING_RECOVERY_FIRST = rospy.get_param("~heading_recovery_first", True)
 HEADING_RECOVERY_MIN_DIST = rospy.get_param("~heading_recovery_min_dist", 0.35)
 NO_AVOID_NEAR_GOAL = rospy.get_param("~no_avoid_near_goal_dist", 0.30)  # 距目标30cm内不绕障
@@ -422,8 +424,23 @@ def nudge_to_target(dx, dy, target_yaw, max_dist=0.20, speed=0.06):
     stop_robot(0.5)
 
 
+def rear_clearance():
+    """读取机器人后方扇区最近距离。小于 REAR_OBSTACLE_STOP_DIST 时禁止倒退。
+
+    使用后方两个扇区：110°~180° 和 -180°~-110°。
+    如果没有雷达数据，返回 10.0，避免因为暂时无数据导致恢复逻辑完全失效。
+    """
+    global _scan_data
+    if _scan_data is None:
+        return 10.0
+
+    rear_left = sector_min(_scan_data, 110.0, 180.0, inflate=0.0)
+    rear_right = sector_min(_scan_data, -180.0, -110.0, inflate=0.0)
+    return min(rear_left, rear_right)
+
+
 def backup_distance(distance=0.10, speed=-0.08, timeout=3.0):
-    """卡死后倒退约 distance 米，再让规划器重新规划。"""
+    """卡死后安全倒退：后方 5cm 内有障碍则不退/立即停。"""
     pub_raw = rospy.Publisher('/cmd_vel_raw', Twist, queue_size=1)
     pub_cmd = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     rospy.sleep(0.1)
@@ -431,19 +448,33 @@ def backup_distance(distance=0.10, speed=-0.08, timeout=3.0):
     speed = -abs(speed)
     S.odom_dist = 0.0
     S.odom_prev = (S.odom_x, S.odom_y)
-    rospy.logwarn(f"  [恢复] 倒退 {distance:.2f}m 后重新规划")
+    rear = rear_clearance()
+    rospy.logwarn(f"  [恢复] 准备倒退 {distance:.2f}m，后方最近障碍={rear:.3f}m，阈值={REAR_OBSTACLE_STOP_DIST:.3f}m")
+
+    if rear <= REAR_OBSTACLE_STOP_DIST:
+        rospy.logwarn("  [恢复] 后方障碍 ≤ 5cm，禁止倒退，直接停车并交给后续清图/重规划")
+        stop_robot(0.5)
+        return False
+
     start_t = time.time()
     rate = rospy.Rate(20)
     while not rospy.is_shutdown() and time.time() - start_t < timeout:
         if S.odom_dist >= distance:
             break
+
+        rear = rear_clearance()
+        if rear <= REAR_OBSTACLE_STOP_DIST:
+            rospy.logwarn(f"  [恢复] 倒退中检测到后方障碍 {rear:.3f}m ≤ 5cm，立即停止")
+            break
+
         msg = Twist()
         msg.linear.x = speed
         pub_raw.publish(msg)
         pub_cmd.publish(msg)
         rate.sleep()
+
     stop_robot(0.5)
-    rospy.logwarn(f"  [恢复] 倒退结束，实际移动 {S.odom_dist:.3f}m")
+    rospy.logwarn(f"  [恢复] 倒退结束，实际移动 {S.odom_dist:.3f}m，后方最近障碍={rear_clearance():.3f}m")
     return S.odom_dist >= distance * 0.6
 
 
@@ -693,8 +724,8 @@ def goto_point(name, pose7, hard_timeout=15.0):
         Point(pose7[0], pose7[1], pose7[2]),
         Quaternion(pose7[3], pose7[4], pose7[5], pose7[6]))
 
-    max_attempts = 3  # 1次初始 + 2次卡死恢复
-    for attempt in range(max_attempts):
+    attempt = 0
+    while True:  # 不允许跳点，无限重试直到到达
         S.odom_dist = 0.0
         S.odom_prev = (S.odom_x, S.odom_y)
         stuck_dist_at = 0.0
@@ -750,99 +781,64 @@ def goto_point(name, pose7, hard_timeout=15.0):
 
             rate.sleep()
 
-        if attempt < max_attempts - 1:
-            cancel_all()
+        cancel_all()
+        rospy.sleep(0.3)
+        print_diagnostics(name)
+
+        goal_pose = pose7
+        # 距目标30cm内不再绕障，直接对准朝向停车
+        near_dist = get_goal_dist(goal_pose[0], goal_pose[1])
+        if near_dist <= NO_AVOID_NEAR_GOAL:
+            rospy.logwarn(f"  [{name}] 距目标仅{near_dist:.2f}m ≤ {NO_AVOID_NEAR_GOAL:.2f}m，不绕障，直接朝向停车")
+            return finish_goal(name, pose7, align_yaw=True, hold_sec=ARRIVAL_HOLD_SEC)
+
+        # 卡死恢复：倒退 → 旋转一定角度(优先右转3次, 之后左右交替) → 清图 → 重规划
+        if BACKUP_ON_STUCK:
+            backup_distance(BACKUP_DIST, BACKUP_SPEED,
+                            timeout=max(2.0, BACKUP_DIST / max(abs(BACKUP_SPEED), 0.02) + 1.0))
             rospy.sleep(0.3)
-            print_diagnostics(name)
 
-            goal_pose = pose7
-            # 距目标30cm内不再绕障，直接对准朝向停车（靠墙目标不会被推开）
-            near_dist = get_goal_dist(goal_pose[0], goal_pose[1])
-            if near_dist <= NO_AVOID_NEAR_GOAL:
-                rospy.logwarn(f"  [{name}] 距目标仅{near_dist:.2f}m ≤ {NO_AVOID_NEAR_GOAL:.2f}m，不绕障，直接朝向停车")
-                return finish_goal(name, pose7, align_yaw=True, hold_sec=ARRIVAL_HOLD_SEC)
-
-            # 卡死恢复：先倒退约13cm，清图，再让 move_base 重新规划。
-            if BACKUP_ON_STUCK:
-                backup_distance(BACKUP_DIST, BACKUP_SPEED,
-                                timeout=max(2.0, BACKUP_DIST / max(abs(BACKUP_SPEED), 0.02) + 1.0))
-                clear_costmaps()
-                rospy.sleep(0.3)
-
-            if HEADING_RECOVERY_FIRST and near_dist > HEADING_RECOVERY_MIN_DIST and update_robot_pose():
-                face_yaw = math.atan2(goal_pose[1] - S.map_y, goal_pose[0] - S.map_x)
-                rospy.logwarn(f"  [{name}] 倒退后先对准目标方向，再交还 move_base 重试")
-                rotate_to_yaw(face_yaw, label=f"{name}_face_goal", yaw_tol_deg=10.0, timeout=5.0)
-                clear_costmaps()
-                rospy.sleep(0.5)
-                rospy.loginfo(f"  [{name}] 已对准目标方向，开始重试 move_base")
-                continue
-
-            rospy.logwarn(f"  [{name}] 进入反应式避障模式 (尝试 {attempt + 1})")
-            reached = reactive_avoidance(goal_pose[0], goal_pose[1], max_duration=8.0)
-
-            if reached:
-                rospy.loginfo(f"  [{name}] 反应式避障到达目标，执行最终朝向")
-                return finish_goal(name, pose7, align_yaw=True, hold_sec=ARRIVAL_HOLD_SEC)
-
-            clear_costmaps()
-            rospy.sleep(0.5)
-            rospy.loginfo(f"  [{name}] 反应式结束, 交还move_base重试 ({attempt + 1}/{max_attempts - 1})...")
-        else:
-            rospy.logerr(f"  [{name}] 放弃 ({max_attempts}次尝试均失败)")
-            print_diagnostics(name)
-
-    return False
+        if update_robot_pose():
+            face_yaw = math.atan2(goal_pose[1] - S.map_y, goal_pose[0] - S.map_x)
+            offset_angles = [-30, -60, -90, 30, -30, 60, -60, 90, -90]
+            offset = math.radians(offset_angles[attempt % len(offset_angles)])
+            target_yaw = face_yaw + offset
+            rospy.logwarn(f"  [{name}] 倒退后旋转{offset_angles[attempt % len(offset_angles)]}°(偏移), 重新规划")
+            rotate_to_yaw(target_yaw, label=f"{name}_recover", yaw_tol_deg=8.0, timeout=5.0)
+        clear_costmaps()
+        rospy.sleep(0.5)
+        attempt += 1
+        continue
+    # unreachable
 
 
 def cruise():
     total = len(S.patrol_path)
-    ok_count = 0
-    fail_list = []
 
     for idx, name in enumerate(S.patrol_path):
         if rospy.is_shutdown():
             break
-
         rospy.loginfo(f"--- [{idx + 1}/{total}] {name} ---")
         pose = S.nav_points[name]
         is_first = (idx == 0)
-
-        # 锥桶区的中间航点给更短超时(它们应该很近)
         is_midpoint = name.startswith("mp")
         timeout = 20.0 if is_first else (8.0 if is_midpoint else 15.0)
 
-        success = goto_point(name, pose, hard_timeout=timeout)
+        goto_point(name, pose, hard_timeout=timeout)
 
-        if success:
-            ok_count += 1
-            if name in TURN_AFTER_POINTS:
-                turn_name = TURN_AFTER_POINTS[name]
-                turn_pose = S.nav_points[turn_name]
-                rospy.loginfo(f"  [{name}] 停车完成，开始执行 {turn_name} 严格原地转向")
-                rotate_to_yaw(pose7_to_yaw(turn_pose), label=turn_name,
-                              yaw_tol_deg=FINAL_YAW_TOL_DEG, timeout=FINAL_YAW_TIMEOUT)
-                stop_robot(0.5)
-                clear_costmaps()
-                rospy.sleep(0.5)
-        else:
-            fail_list.append(name)
-            cancel_all()
-            rospy.sleep(0.3)
+        if name in TURN_AFTER_POINTS:
+            turn_name = TURN_AFTER_POINTS[name]
+            turn_pose = S.nav_points[turn_name]
+            rospy.loginfo(f"  [{name}] 停车完成，开始执行 {turn_name} 严格原地转向")
+            rotate_to_yaw(pose7_to_yaw(turn_pose), label=turn_name,
+                          yaw_tol_deg=FINAL_YAW_TOL_DEG, timeout=FINAL_YAW_TIMEOUT)
+            stop_robot(0.5)
             clear_costmaps()
             rospy.sleep(0.5)
-
-            # 如果是中间点失败, 跳过它继续去 d2
-            if is_midpoint:
-                rospy.logwarn(f"  中间点 [{name}] 失败, 跳到下一个目标")
-                continue
-
         rospy.sleep(0.3)
 
     rospy.loginfo("=" * 60)
-    rospy.loginfo(f"巡航结束: 成功 {ok_count}/{total}, 失败 {len(fail_list)}")
-    if fail_list:
-        rospy.loginfo(f"失败点: {', '.join(fail_list)}")
+    rospy.loginfo(f"巡航结束: 全部 {total} 个航点完成")
     rospy.loginfo("=" * 60)
 
 
