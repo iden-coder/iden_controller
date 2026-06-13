@@ -1,0 +1,113 @@
+<launch>
+  <!-- Experiment 3 patrol mode.
+       Usage:
+         roslaunch iden_controller cruise_navfn_exp3.launch
+         rosrun iden_controller process_navfn_exp3.py
+
+       Based on success2. It keeps the stable patrol logic, but lets clear
+       straights run faster while the safety filter caps speed near walls.
+  -->
+
+  <include file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
+  <include file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node name="map_server" pkg="map_server" type="map_server"
+        args="$(find ucar_nav)/maps/6.3.1.yaml" output="screen">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <include file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <!-- Light safety filter. It only stops at very close range, and otherwise
+       scales speed smoothly so the old route remains passable. -->
+  <node pkg="iden_controller" type="safety_monitor_exp3.py" name="safety_monitor" output="screen">
+    <param name="cmd_vel_in_topic" value="/cmd_vel_raw"/>
+    <param name="cmd_vel_out_topic" value="/cmd_vel"/>
+    <param name="scan_topic" value="/scan"/>
+    <param name="stop_zone" value="0.145"/>
+    <param name="side_stop_zone" value="0.09"/>
+    <param name="slowdown_zone" value="0.42"/>
+    <param name="slowdown_ratio" value="0.42"/>
+    <param name="monitor_front_angle_deg" value="35.0"/>
+    <param name="monitor_side_angle_min" value="35.0"/>
+    <param name="monitor_side_angle_max" value="65.0"/>
+    <param name="min_angular_ratio" value="0.20"/>
+    <param name="max_stop_angular" value="0.10"/>
+    <param name="max_escape_reverse" value="0.05"/>
+    <param name="clear_speed_front" value="0.58"/>
+    <param name="clear_speed_side" value="0.25"/>
+    <param name="caution_front" value="0.32"/>
+    <param name="caution_side" value="0.18"/>
+    <param name="close_front" value="0.22"/>
+    <param name="close_side" value="0.14"/>
+    <param name="max_caution_linear" value="0.28"/>
+    <param name="max_close_linear" value="0.13"/>
+    <param name="current_point_param" value="/iden_controller/current_nav_point"/>
+    <param name="risk_points" value="s6,s6t,s9,s9t"/>
+    <param name="risk_stop_zone" value="0.17"/>
+    <param name="risk_side_stop_zone" value="0.12"/>
+    <param name="risk_caution_front" value="0.42"/>
+    <param name="risk_caution_side" value="0.24"/>
+    <param name="risk_close_front" value="0.28"/>
+    <param name="risk_close_side" value="0.18"/>
+    <param name="risk_max_caution_linear" value="0.18"/>
+    <param name="risk_max_close_linear" value="0.08"/>
+    <param name="enabled" value="true"/>
+  </node>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <remap from="cmd_vel" to="/cmd_vel_raw"/>
+
+    <param name="base_global_planner" value="navfn/NavfnROS"/>
+    <param name="base_local_planner" value="iden_planner/IdenPlanner"/>
+    <param name="planner_frequency" value="1.0"/>
+    <param name="controller_frequency" value="10.0"/>
+
+    <param name="navfn/NavfnROS/allow_unknown" value="true"/>
+    <param name="navfn/NavfnROS/default_tolerance" value="0.18"/>
+
+    <!-- IdenPlanner parameters: close to the old working version, but capped
+         enough to reduce wall contact and overshoot. -->
+    <param name="iden_planner/IdenPlanner/kp" value="3.2"/>
+    <param name="iden_planner/IdenPlanner/ki" value="0.02"/>
+    <param name="iden_planner/IdenPlanner/kd" value="0.07"/>
+    <param name="iden_planner/IdenPlanner/integral_limit" value="0.5"/>
+    <param name="iden_planner/IdenPlanner/lookahead_dist" value="0.35"/>
+    <param name="iden_planner/IdenPlanner/angle_power" value="1.5"/>
+    <param name="iden_planner/IdenPlanner/angle_full_speed_deg" value="0.0"/>
+    <param name="iden_planner/IdenPlanner/angle_zero_speed_deg" value="90.0"/>
+    <param name="iden_planner/IdenPlanner/enable_bidirectional" value="true"/>
+    <param name="iden_planner/IdenPlanner/long_lookahead" value="0.52"/>
+    <param name="iden_planner/IdenPlanner/reverse_vote_ratio" value="0.7"/>
+    <param name="iden_planner/IdenPlanner/reverse_confirm_frames" value="3"/>
+    <param name="iden_planner/IdenPlanner/max_linear_vel" value="0.68"/>
+    <param name="iden_planner/IdenPlanner/min_linear_vel" value="-0.42"/>
+    <param name="iden_planner/IdenPlanner/max_angular_vel" value="0.90"/>
+    <param name="iden_planner/IdenPlanner/linear_gain" value="4.0"/>
+    <param name="iden_planner/IdenPlanner/pose_dist_threshold" value="0.10"/>
+    <param name="iden_planner/IdenPlanner/pos_deadband" value="0.05"/>
+    <param name="iden_planner/IdenPlanner/yaw_deadband" value="0.055"/>
+    <param name="iden_planner/IdenPlanner/angle_adjust_gain" value="1.6"/>
+    <param name="iden_planner/IdenPlanner/slow_zone" value="0.2"/>
+    <param name="iden_planner/IdenPlanner/min_adjust_speed" value="0.07"/>
+    <param name="iden_planner/IdenPlanner/pose_tolerance" value="0.050"/>
+    <param name="iden_planner/IdenPlanner/pose_adjust_timeout" value="5.0"/>
+    <param name="iden_planner/IdenPlanner/pose_adjust_max_linear" value="0.04"/>
+    <param name="iden_planner/IdenPlanner/collision_check_count" value="10"/>
+    <param name="iden_planner/IdenPlanner/collision_cooldown_max" value="20"/>
+    <param name="iden_planner/IdenPlanner/collision_replan_max" value="2"/>
+    <param name="iden_planner/IdenPlanner/enable_visualization" value="false"/>
+    <param name="iden_planner/IdenPlanner/enable_costmap_pub" value="false"/>
+
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml"
+              command="load" ns="global_costmap" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/costmap_common_params.yaml"
+              command="load" ns="local_costmap" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_planner_params.yaml"
+              command="load" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/local_costmap_params.yaml"
+              command="load" />
+    <rosparam file="$(find ucar_nav)/launch/config/move_base/global_costmap_params.yaml"
+              command="load" />
+  </node>
+</launch>
