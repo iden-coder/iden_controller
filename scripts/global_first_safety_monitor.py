@@ -42,6 +42,13 @@ class GlobalFirstSafetyMonitor:
         self.clear_slow_ratio = rospy.get_param("~clear_slow_ratio", 0.55)
         self.allow_reverse = rospy.get_param("~allow_reverse", False)
         self.swap_left_right = rospy.get_param("~swap_left_right", False)
+        self.escape_enabled = rospy.get_param("~escape_enabled", True)
+        self.escape_back_speed = abs(rospy.get_param("~escape_back_speed", 0.08))
+        self.escape_back_time = rospy.get_param("~escape_back_time_s", 0.9)
+        self.escape_cooldown = rospy.get_param("~escape_cooldown_s", 0.25)
+        self.escape_rear_clear = rospy.get_param("~escape_rear_clear_m", 0.34)
+        self.escape_front_release = rospy.get_param("~escape_front_release_m", 0.34)
+        self.escape_turn_wz = abs(rospy.get_param("~escape_turn_wz", 0.08))
 
         self.min_front = float("inf")
         self.min_left = float("inf")
@@ -49,6 +56,8 @@ class GlobalFirstSafetyMonitor:
         self.min_rear = float("inf")
         self.scan_seen = False
         self.last_scan_time = rospy.Time(0)
+        self.escape_until = rospy.Time(0)
+        self.last_escape_end = rospy.Time(0)
 
         self.pub_cmd = rospy.Publisher(self.cmd_vel_out_topic, Twist, queue_size=1)
         self.sub_scan = rospy.Subscriber(
@@ -58,8 +67,9 @@ class GlobalFirstSafetyMonitor:
         rospy.Service("~toggle", SetBool, self.cb_toggle)
 
         rospy.logwarn(
-            "GlobalFirstSafetyMonitor started: front_stop=%.2f side_stop=%.2f critical=(%.2f, %.2f)",
-            self.front_stop, self.side_stop, self.front_critical, self.side_critical)
+            "GlobalFirstSafetyMonitor started: front_stop=%.2f side_stop=%.2f critical=(%.2f, %.2f) escape=%s",
+            self.front_stop, self.side_stop, self.front_critical, self.side_critical,
+            str(self.escape_enabled))
 
     def cb_toggle(self, req):
         self.enabled = req.data
@@ -114,6 +124,46 @@ class GlobalFirstSafetyMonitor:
             return preferred
         return clamp(wz, -self.max_turn_wz, self.max_turn_wz)
 
+    def rear_clear_for_escape(self):
+        return self.min_rear >= max(self.rear_stop, self.escape_rear_clear)
+
+    def escape_turn(self):
+        if self.escape_turn_wz <= 0.0:
+            return 0.0
+        if self.min_left < self.side_critical and self.min_right < self.side_critical:
+            return 0.0
+        if self.min_left < self.side_critical:
+            return -min(self.escape_turn_wz, self.max_turn_wz)
+        if self.min_right < self.side_critical:
+            return min(self.escape_turn_wz, self.max_turn_wz)
+        if self.min_left == float("inf") and self.min_right == float("inf"):
+            return 0.0
+        return min(self.escape_turn_wz, self.max_turn_wz) if self.min_left >= self.min_right else -min(self.escape_turn_wz, self.max_turn_wz)
+
+    def escape_active(self, now):
+        return (self.escape_until - now).to_sec() > 0.0
+
+    def maybe_escape(self, reason, now):
+        if not self.escape_enabled:
+            return None
+        if not self.rear_clear_for_escape():
+            if self.escape_active(now):
+                self.last_escape_end = now
+            self.escape_until = rospy.Time(0)
+            return None
+
+        if self.escape_active(now):
+            if self.min_front >= self.escape_front_release:
+                self.last_escape_end = now
+                self.escape_until = rospy.Time(0)
+                return None
+            return -self.escape_back_speed, self.escape_turn(), reason + "_ESCAPE"
+
+        if (now - self.last_escape_end).to_sec() < self.escape_cooldown:
+            return None
+        self.escape_until = now + rospy.Duration(self.escape_back_time)
+        return -self.escape_back_speed, self.escape_turn(), reason + "_ESCAPE"
+
     def compute(self, vx, wz):
         if not self.enabled:
             return vx, wz, "DISABLED"
@@ -125,10 +175,17 @@ class GlobalFirstSafetyMonitor:
         if vx < 0.0:
             if not self.allow_reverse:
                 vx = 0.0
-            elif self.min_rear < self.rear_stop:
+            elif not self.rear_clear_for_escape():
                 return self.zero("STOP_REAR")
+            else:
+                vx = -min(abs(vx), self.escape_back_speed)
+
+        now = rospy.Time.now()
 
         if self.min_front < self.front_critical:
+            escape = self.maybe_escape("FRONT_CRITICAL", now)
+            if escape is not None:
+                return escape
             return 0.0, self.turn_away_from_wall(wz), "FRONT_CRITICAL"
 
         if self.min_left < self.side_critical or self.min_right < self.side_critical:
@@ -136,8 +193,15 @@ class GlobalFirstSafetyMonitor:
             return 0.0, safe_wz, "SIDE_CRITICAL"
 
         if self.min_front < self.front_stop:
+            escape = self.maybe_escape("STOP_FRONT", now)
+            if escape is not None:
+                return escape
             safe_wz = self.turn_away_from_wall(wz)
             return 0.0, safe_wz, "STOP_FRONT"
+
+        if self.escape_active(now):
+            self.last_escape_end = now
+            self.escape_until = rospy.Time(0)
 
         if self.min_left < self.side_stop or self.min_right < self.side_stop:
             if self.min_left < self.side_stop and wz > 0.0:

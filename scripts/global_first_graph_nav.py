@@ -48,6 +48,7 @@ class GridMap:
         self.occupied_threshold = int(occupied_threshold)
         self.unknown_is_obstacle = bool(unknown_is_obstacle)
         self.dist_cells = None
+        self.dynamic_blocked = set()
         self._cos = math.cos(self.origin_yaw)
         self._sin = math.sin(self.origin_yaw)
 
@@ -78,10 +79,36 @@ class GridMap:
     def is_occupied_cell(self, mx, my):
         if not self.in_bounds(mx, my):
             return True
+        if (mx, my) in self.dynamic_blocked:
+            return True
         value = self.data[self.index(mx, my)]
         if value < 0:
             return self.unknown_is_obstacle
         return value >= self.occupied_threshold
+
+    def clear_dynamic_blocks(self):
+        self.dynamic_blocked.clear()
+
+    def add_dynamic_block(self, wx, wy, radius_m):
+        center = self.world_to_map(wx, wy)
+        if center is None:
+            return 0
+        radius_cells = max(1, int(math.ceil(radius_m / self.resolution)))
+        added = 0
+        cx, cy = center
+        r2 = radius_cells * radius_cells
+        for dy in range(-radius_cells, radius_cells + 1):
+            for dx in range(-radius_cells, radius_cells + 1):
+                if dx * dx + dy * dy > r2:
+                    continue
+                mx = cx + dx
+                my = cy + dy
+                if not self.in_bounds(mx, my):
+                    continue
+                if (mx, my) not in self.dynamic_blocked:
+                    self.dynamic_blocked.add((mx, my))
+                    added += 1
+        return added
 
     def compute_distance_field(self):
         n = self.width * self.height
@@ -887,6 +914,10 @@ class RosGlobalFirstGraphNavigator:
         self.k_lateral = rospy.get_param("~k_lateral", 0.58)
         self.linear_accel = rospy.get_param("~linear_accel", 0.18)
         self.angular_accel = rospy.get_param("~angular_accel", 1.00)
+        self.final_slow_radius = rospy.get_param("~final_slow_radius_m", 0.45)
+        self.final_slow_speed = rospy.get_param("~final_slow_speed", 0.22)
+        self.final_creep_radius = rospy.get_param("~final_creep_radius_m", 0.25)
+        self.final_creep_speed = rospy.get_param("~final_creep_speed", 0.10)
 
         self.front_angle_deg = rospy.get_param("~front_angle_deg", 36.0)
         self.side_angle_min_deg = rospy.get_param("~side_angle_min_deg", 35.0)
@@ -899,6 +930,22 @@ class RosGlobalFirstGraphNavigator:
         self.pose_timeout_s = rospy.get_param("~pose_timeout_s", 5.0)
         self.front_turn_speed = rospy.get_param("~front_turn_speed", 0.18)
         self.front_replan_after_s = rospy.get_param("~front_replan_after_s", 3.0)
+        self.dynamic_obstacles_enabled = rospy.get_param(
+            "~dynamic_obstacles_enabled", True)
+        self.dynamic_obstacle_radius_m = rospy.get_param(
+            "~dynamic_obstacle_radius_m", 0.22)
+        self.dynamic_obstacle_record_range_m = rospy.get_param(
+            "~dynamic_obstacle_record_range_m", 0.55)
+        self.dynamic_obstacle_trigger_m = rospy.get_param(
+            "~dynamic_obstacle_trigger_m", 0.22)
+        self.dynamic_obstacle_range_pad_m = rospy.get_param(
+            "~dynamic_obstacle_range_pad_m", 0.03)
+        self.dynamic_obstacle_min_interval_s = rospy.get_param(
+            "~dynamic_obstacle_min_interval_s", 0.7)
+        self.dynamic_obstacle_max_cells = rospy.get_param(
+            "~dynamic_obstacle_max_cells", 3500)
+        self.dynamic_obstacle_closest_only = rospy.get_param(
+            "~dynamic_obstacle_closest_only", True)
 
         self.replan_min_interval_s = rospy.get_param("~replan_min_interval_s", 2.0)
         self.blocked_replan_s = rospy.get_param("~blocked_replan_s", 1.5)
@@ -934,6 +981,7 @@ class RosGlobalFirstGraphNavigator:
         self.last_control_time = rospy.Time.now()
         self.replan_fail_count = 0
         self.front_block_start = None
+        self.last_dynamic_obstacle_time = rospy.Time(0)
 
         self.cmd_pub = rospy.Publisher(
             rospy.get_param("~cmd_vel_topic", "/cmd_vel_raw"),
@@ -1036,6 +1084,70 @@ class RosGlobalFirstGraphNavigator:
             if lo <= angle <= hi and value < best:
                 best = value
         return best
+
+    def remember_front_dynamic_obstacles(self, reason):
+        if not self.dynamic_obstacles_enabled:
+            return 0
+        if self.grid is None or self.planner is None or self.pose is None or self.scan is None:
+            return 0
+
+        now = self.rospy.Time.now()
+        if ((now - self.last_dynamic_obstacle_time).to_sec() <
+                self.dynamic_obstacle_min_interval_s):
+            return 0
+
+        x, y, yaw = self.pose
+        half = math.radians(self.front_angle_deg)
+        record_range = max(self.front_stop_m, self.dynamic_obstacle_record_range_m)
+        if self.front > self.dynamic_obstacle_trigger_m:
+            return 0
+        added = 0
+        hits = 0
+        best = None
+        for i, value in enumerate(self.scan.ranges):
+            if math.isnan(value) or math.isinf(value):
+                continue
+            if value < self.scan.range_min or value > self.scan.range_max:
+                continue
+            angle = self.scan.angle_min + i * self.scan.angle_increment
+            if abs(angle) > half or value > record_range:
+                continue
+            if self.dynamic_obstacle_closest_only:
+                if best is None or value < best[0]:
+                    best = (value, angle)
+                continue
+            dist = min(value + self.dynamic_obstacle_range_pad_m, record_range)
+            wx = x + math.cos(yaw + angle) * dist
+            wy = y + math.sin(yaw + angle) * dist
+            added += self.grid.add_dynamic_block(
+                wx, wy, self.dynamic_obstacle_radius_m)
+            hits += 1
+
+        if self.dynamic_obstacle_closest_only and best is not None:
+            dist = min(best[0] + self.dynamic_obstacle_range_pad_m, record_range)
+            wx = x + math.cos(yaw + best[1]) * dist
+            wy = y + math.sin(yaw + best[1]) * dist
+            added += self.grid.add_dynamic_block(
+                wx, wy, self.dynamic_obstacle_radius_m)
+            hits = 1
+
+        if added <= 0:
+            return 0
+
+        if len(self.grid.dynamic_blocked) > self.dynamic_obstacle_max_cells:
+            self.grid.clear_dynamic_blocks()
+            dist = min(self.front + self.dynamic_obstacle_range_pad_m, record_range)
+            wx = x + math.cos(yaw) * dist
+            wy = y + math.sin(yaw) * dist
+            added = self.grid.add_dynamic_block(
+                wx, wy, self.dynamic_obstacle_radius_m)
+
+        self.last_dynamic_obstacle_time = now
+        self.planner.roadmaps.clear()
+        self.log_status(
+            "%s: remembered %d front laser hits as dynamic blocks; total_cells=%d" %
+            (reason, hits, len(self.grid.dynamic_blocked)))
+        return added
 
     def scan_fresh(self):
         if self.scan is None:
@@ -1186,6 +1298,7 @@ class RosGlobalFirstGraphNavigator:
             return
         cmd = self.compute_cmd(target)
         cmd = self.apply_scan_guard(cmd)
+        cmd = self.apply_goal_approach_limit(cmd)
         cmd = self.smooth_cmd(cmd)
         self.publish_cmd(cmd[0], cmd[1])
 
@@ -1249,7 +1362,7 @@ class RosGlobalFirstGraphNavigator:
     def select_target(self):
         if not self.path_world:
             return None
-        x, y, _ = self.pose
+        x, y, yaw = self.pose
         lo = max(0, self.path_index - 8)
         hi = min(len(self.path_world), self.path_index + 120)
         best = self.path_index
@@ -1261,6 +1374,26 @@ class RosGlobalFirstGraphNavigator:
                 best_d2 = d2
                 best = i
         self.path_index = max(self.path_index, best)
+
+        # If the robot has rotated at the start or after a replan, the nearest
+        # path point may be beside/behind the base. Skip those points so the
+        # controller reconnects to a forward target instead of turning in
+        # place and repeatedly tripping the stuck watchdog.
+        front_index = self.path_index
+        search_hi = min(len(self.path_world), self.path_index + 90)
+        for i in range(self.path_index, search_hi):
+            px, py = self.path_world[i]
+            dx = px - x
+            dy = py - y
+            local_x = math.cos(yaw) * dx + math.sin(yaw) * dy
+            dist = math.hypot(dx, dy)
+            if local_x > 0.05 and dist >= min(self.lookahead_dist * 0.45, 0.18):
+                front_index = i
+                break
+            if local_x > -0.03 and dist >= self.lookahead_dist * 0.75:
+                front_index = i
+                break
+        self.path_index = max(self.path_index, front_index)
 
         accum = 0.0
         prev = (x, y)
@@ -1310,9 +1443,10 @@ class RosGlobalFirstGraphNavigator:
             if (blocked_for >= self.front_replan_after_s and
                     (now - self.last_blocked_replan).to_sec() >= self.blocked_replan_s):
                 self.last_blocked_replan = now
+                remembered = self.remember_front_dynamic_obstacles("front blocked")
                 self.log_status(
-                    "front blocked %.2fm for %.1fs: global graph replan requested" %
-                    (self.front, blocked_for))
+                    "front blocked %.2fm for %.1fs: global graph replan requested dynamic_added=%d" %
+                    (self.front, blocked_for, remembered))
                 self.plan_from_current_pose("front blocked", force=True)
 
             if self.left < self.side_stop_m and self.right < self.side_stop_m:
@@ -1356,6 +1490,20 @@ class RosGlobalFirstGraphNavigator:
             angular *= max(0.45, ratio)
 
         return linear, clamp(angular, -self.max_angular, self.max_angular)
+
+    def apply_goal_approach_limit(self, cmd):
+        linear, angular = cmd
+        if linear <= 0.0:
+            return cmd
+        dist = self.distance_to_active_goal()
+        if dist <= self.final_creep_radius:
+            linear = min(linear, self.final_creep_speed)
+        elif dist <= self.final_slow_radius:
+            span = max(self.final_slow_radius - self.final_creep_radius, 1.0e-3)
+            t = clamp((dist - self.final_creep_radius) / span, 0.0, 1.0)
+            cap = self.final_creep_speed + t * (self.final_slow_speed - self.final_creep_speed)
+            linear = min(linear, cap)
+        return linear, angular
 
     def smooth_cmd(self, cmd):
         now = self.rospy.Time.now()
