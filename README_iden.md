@@ -6,6 +6,7 @@ rosrun iden_controller process_navfn.py
 roslaunch iden_controller cruise_navfn_v2_wide.launch
 rosrun iden_controller cruise_demo.py
 
+# 小小的第一部分多定点成功导航
  roslaunch iden_controller cruise_navfn_success1.launch
  rosrun iden_controller process_navfn_success1.py
 
@@ -17,3 +18,6 @@ roslaunch iden_controller global_first_graph_nav.launch
 
 # 第一部分仅导航加扫码
 roslaunch iden_controller global_first_graph_nav_qr_room.launch
+
+# 第一部分所有
+roslaunch iden_controller subtask1_real_factory.launch

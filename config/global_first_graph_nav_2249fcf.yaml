@@ -1,0 +1,126 @@
+# Global-first graph navigation.
+# Map/global planning dominates; local control only tracks the path and filters
+# unsafe velocity commands.
+
+map_frame: map
+base_frame: base_link
+map_service: /static_map
+map_topic: /map
+pose_topic: /amcl_pose
+scan_topic: /scan
+cmd_vel_topic: /cmd_vel_raw
+
+# One final goal. Heading pi means the vehicle finishes facing map -x.
+goal_x: -1.50
+goal_y: -0.40
+goal_yaw: 3.1415926
+require_goal_yaw: true
+goal_tolerance_m: 0.07
+goal_yaw_tolerance_deg: 7.0
+goal_hold_s: 1.0
+
+# Required pass-through point before the final goal. This point is only used
+# as a position target; final heading is still enforced at the final goal.
+waypoint_enabled: true
+waypoint_x: -0.33
+waypoint_y: -1.02
+waypoint_tolerance_m: 0.12
+waypoint_hold_s: 0.0
+
+# Current baseline start pose.
+publish_initial_pose_on_start: true
+initial_pose_x: 0.0
+initial_pose_y: 0.0
+initial_pose_yaw: 0.0
+initial_pose_repeat_s: 3.0
+initial_pose_period_s: 0.25
+require_start_near_initial: true
+start_pose_tolerance_m: 0.45
+start_yaw_tolerance_deg: 80.0
+
+# Global planning. Similar maps may be slightly noisier; keep graph-first with
+# dense-grid fallback, but do not relax below the robot's practical clearance.
+robot_half_length: 0.171
+robot_half_width: 0.128
+robot_half_diag: 0.214
+occupied_threshold: 50
+unknown_is_obstacle: true
+graph_enabled: true
+fallback_grid_enabled: true
+hard_clearance_m: 0.16
+preferred_clearance_m: 0.34
+emergency_min_clearance_m: 0.14
+smooth_clearance_m: 0.22
+allow_clearance_fallback: true
+goal_snap_radius_m: 0.45
+max_planning_time_s: 6.0
+graph_max_planning_time_s: 3.5
+grid_max_planning_time_s: 4.0
+heuristic_weight: 1.05
+proximity_weight: 2.9
+unknown_cost: 6.0
+path_spacing_m: 0.05
+
+# Roadmap sampling.
+graph_sample_stride_m: 0.16
+graph_connect_radius_m: 0.78
+graph_start_goal_radius_m: 1.00
+graph_max_neighbors: 18
+graph_start_goal_neighbors: 32
+graph_max_nodes: 4200
+
+# Faster tracking in open space. The planner publishes forward-only commands;
+# the safety monitor may add a short radar-gated reverse escape if the bumper
+# side is already blocked.
+control_rate_hz: 14.0
+lookahead_dist_m: 0.56
+rotate_in_place_angle_deg: 38.0
+max_linear_vel: 0.60
+min_tracking_speed: 0.18
+max_angular_vel: 0.95
+turn_creep_speed: 0.12
+turn_creep_front_min: 0.28
+turn_creep_side_min: 0.16
+k_heading: 1.20
+k_lateral: 0.48
+linear_accel: 0.62
+angular_accel: 1.45
+
+# Slow down before the final pose so position/yaw accuracy improves even with
+# the higher cruising speed.
+final_slow_radius_m: 0.45
+final_slow_speed: 0.22
+final_creep_radius_m: 0.25
+final_creep_speed: 0.10
+
+# Planner-internal laser guard. Speed is higher in open space, but near real
+# walls these distances force early slow/stop/replan behavior.
+front_angle_deg: 30.0
+side_angle_min_deg: 35.0
+side_angle_max_deg: 76.0
+front_stop_m: 0.24
+front_slow_m: 0.35
+side_stop_m: 0.16
+side_slow_m: 0.23
+scan_timeout_s: 0.70
+pose_timeout_s: 5.0
+front_turn_speed: 0.28
+front_replan_after_s: 1.6
+
+# Real-world wall memory. If the static map says a passage is open but the
+# lidar repeatedly sees a wall there, inject a temporary blocked patch and
+# replan globally around it instead of bouncing in place.
+dynamic_obstacles_enabled: true
+dynamic_obstacle_radius_m: 0.16
+dynamic_obstacle_record_range_m: 0.35
+dynamic_obstacle_trigger_m: 0.22
+dynamic_obstacle_range_pad_m: 0.01
+dynamic_obstacle_min_interval_s: 2.0
+dynamic_obstacle_max_cells: 3500
+dynamic_obstacle_closest_only: true
+
+# Stuck never means success: stop, replan globally, and keep trying.
+replan_min_interval_s: 1.4
+blocked_replan_s: 2.0
+stuck_timeout_s: 4.0
+progress_dist_m: 0.08

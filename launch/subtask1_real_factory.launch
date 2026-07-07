@@ -44,7 +44,7 @@
     <param name="auto_start_nav" value="$(arg auto_start_nav)" />
     <param name="default_voice_text" value="$(arg default_voice_text)" />
     <param name="nav_launch_pkg" value="iden_controller" />
-    <param name="nav_launch_file" value="global_first_graph_nav_qr_room.launch" />
+    <param name="nav_launch_file" value="global_first_graph_nav_qr_room_2249fcf.launch" />
     <param name="nav_roslaunch_args"
            value="map_yaml:=$(arg map_yaml) goal_x:=$(arg goal_x) goal_y:=$(arg goal_y) goal_yaw:=$(arg goal_yaw) waypoint_enabled:=$(arg waypoint_enabled) waypoint_x:=$(arg waypoint_x) waypoint_y:=$(arg waypoint_y) start_base:=$(arg start_base) start_lidar:=$(arg start_lidar) start_camera:=$(arg start_camera) start_map:=$(arg start_map) start_amcl:=$(arg start_amcl) start_safety_monitor:=$(arg start_safety_monitor)" />
     <param name="use_spark" value="$(arg use_spark)" />
