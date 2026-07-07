@@ -80,13 +80,13 @@
     <param name="scan_topic" value="/scan" />
     <param name="enabled" value="true" />
     <param name="swap_left_right" value="false" />
-    <param name="front_stop_m" value="0.22" />
-    <param name="front_critical_m" value="0.16" />
-    <param name="front_slow_m" value="0.34" />
-    <param name="side_stop_m" value="0.14" />
-    <param name="side_critical_m" value="0.12" />
-    <param name="side_avoid_m" value="0.18" />
-    <param name="side_slow_m" value="0.23" />
+    <param name="front_stop_m" value="0.23" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_slow_m" value="0.36" />
+    <param name="side_stop_m" value="0.15" />
+    <param name="side_critical_m" value="0.125" />
+    <param name="side_avoid_m" value="0.19" />
+    <param name="side_slow_m" value="0.24" />
     <param name="rear_stop_m" value="0.24" />
     <param name="front_angle_deg" value="34.0" />
     <param name="side_angle_min_deg" value="35.0" />

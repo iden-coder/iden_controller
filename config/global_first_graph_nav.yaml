@@ -90,10 +90,10 @@ final_creep_speed: 0.10
 front_angle_deg: 30.0
 side_angle_min_deg: 35.0
 side_angle_max_deg: 76.0
-front_stop_m: 0.22
-front_slow_m: 0.34
-side_stop_m: 0.14
-side_slow_m: 0.22
+front_stop_m: 0.23
+front_slow_m: 0.36
+side_stop_m: 0.15
+side_slow_m: 0.24
 scan_timeout_s: 0.70
 pose_timeout_s: 5.0
 front_turn_speed: 0.28
@@ -103,9 +103,9 @@ front_replan_after_s: 1.6
 # lidar repeatedly sees a wall there, inject a temporary blocked patch and
 # replan globally around it instead of bouncing in place.
 dynamic_obstacles_enabled: true
-dynamic_obstacle_radius_m: 0.14
-dynamic_obstacle_record_range_m: 0.34
-dynamic_obstacle_trigger_m: 0.22
+dynamic_obstacle_radius_m: 0.15
+dynamic_obstacle_record_range_m: 0.36
+dynamic_obstacle_trigger_m: 0.23
 dynamic_obstacle_range_pad_m: 0.01
 dynamic_obstacle_min_interval_s: 2.0
 dynamic_obstacle_max_cells: 3500
