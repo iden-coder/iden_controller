@@ -1,0 +1,54 @@
+<launch>
+  <!-- Subtask 1 only: real-world voice order, navigation, QR scan, item selection.
+       Simulation-related tasks are intentionally not started here. -->
+
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.40" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="waypoint_enabled" default="true" />
+  <arg name="waypoint_x" default="-0.33" />
+  <arg name="waypoint_y" default="-1.02" />
+
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <arg name="auto_start_nav" default="false" />
+  <arg name="default_voice_text" default="" />
+  <arg name="use_spark" default="true" />
+  <arg name="spark_api_key" default="$(optenv SPARK_API_KEY)" />
+  <arg name="spark_api_secret" default="$(optenv SPARK_API_SECRET)" />
+
+  <node pkg="speech_command" type="cloud_asr_test2"
+        name="cloud_asr_test2" output="screen"
+        respawn="true" respawn_delay="0.8" />
+
+  <node pkg="iden_controller" type="subtask1_real_order_fusion.py"
+        name="subtask1_real_order_fusion" output="screen">
+    <param name="voice_topic" value="/factory/voice_raw_text" />
+    <param name="qr_summary_topic" value="/qr_room_scan_results" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="result_topic" value="/factory/subtask1_result" />
+    <param name="compat_target_topic" value="/factory/target_warehouses" />
+    <param name="state_topic" value="/factory/task_state" />
+    <param name="required_item_count" value="3" />
+    <param name="require_wake_before_order" value="true" />
+    <param name="require_target_category" value="true" />
+    <param name="rearm_asr_on_incomplete_voice" value="true" />
+    <param name="asr_node_name" value="/cloud_asr_test2" />
+    <param name="asr_rearm_delay_s" value="3.0" />
+    <param name="auto_start_nav" value="$(arg auto_start_nav)" />
+    <param name="default_voice_text" value="$(arg default_voice_text)" />
+    <param name="nav_launch_pkg" value="iden_controller" />
+    <param name="nav_launch_file" value="global_first_graph_nav_qr_room.launch" />
+    <param name="nav_roslaunch_args"
+           value="map_yaml:=$(arg map_yaml) goal_x:=$(arg goal_x) goal_y:=$(arg goal_y) goal_yaw:=$(arg goal_yaw) waypoint_enabled:=$(arg waypoint_enabled) waypoint_x:=$(arg waypoint_x) waypoint_y:=$(arg waypoint_y) start_base:=$(arg start_base) start_lidar:=$(arg start_lidar) start_camera:=$(arg start_camera) start_map:=$(arg start_map) start_amcl:=$(arg start_amcl) start_safety_monitor:=$(arg start_safety_monitor)" />
+    <param name="use_spark" value="$(arg use_spark)" />
+    <param name="spark_api_key" value="$(arg spark_api_key)" />
+    <param name="spark_api_secret" value="$(arg spark_api_secret)" />
+  </node>
+</launch>
