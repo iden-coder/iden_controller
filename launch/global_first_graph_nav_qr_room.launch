@@ -11,6 +11,26 @@
   <arg name="initial_pose_y" default="0.0" />
   <arg name="initial_pose_yaw" default="0.0" />
 
+  <!-- Combo-only navigation overrides: keep old files intact, but make this
+       end-to-end task replan earlier and finish more accurately. -->
+  <arg name="nav_goal_tolerance_m" default="0.05" />
+  <arg name="nav_goal_yaw_tolerance_deg" default="5.0" />
+  <arg name="nav_goal_hold_s" default="1.2" />
+  <arg name="nav_stuck_timeout_s" default="2.8" />
+  <arg name="nav_replan_min_interval_s" default="0.9" />
+  <arg name="nav_blocked_replan_s" default="1.2" />
+  <arg name="nav_front_replan_after_s" default="1.0" />
+  <arg name="nav_lookahead_dist_m" default="0.62" />
+  <arg name="nav_min_tracking_speed" default="0.20" />
+  <arg name="nav_turn_creep_speed" default="0.14" />
+  <arg name="nav_final_slow_radius_m" default="0.55" />
+  <arg name="nav_final_slow_speed" default="0.20" />
+  <arg name="nav_final_creep_radius_m" default="0.30" />
+  <arg name="nav_final_creep_speed" default="0.08" />
+  <arg name="nav_hard_clearance_m" default="0.17" />
+  <arg name="nav_preferred_clearance_m" default="0.36" />
+  <arg name="nav_smooth_clearance_m" default="0.24" />
+
   <arg name="start_base" default="true" />
   <arg name="start_lidar" default="true" />
   <arg name="start_camera" default="true" />
@@ -28,12 +48,15 @@
 
   <arg name="qr_target_count" default="3" />
   <arg name="qr_scan_per_wall_s" default="2.8" />
-  <arg name="qr_first_wall_scan_s" default="5.0" />
+  <arg name="qr_first_wall_scan_s" default="6.0" />
   <arg name="qr_settle_s" default="0.45" />
-  <arg name="qr_first_wall_settle_s" default="1.2" />
+  <arg name="qr_first_wall_settle_s" default="1.6" />
   <arg name="qr_process_rate_hz" default="12.0" />
   <arg name="qr_angular_speed" default="0.52" />
   <arg name="qr_fetch_url" default="true" />
+  <arg name="qr_micro_sweep_deg" default="16.0" />
+  <arg name="qr_first_wall_micro_sweep_deg" default="28.0" />
+  <arg name="qr_first_wall_micro_sweep_scan_s" default="2.0" />
 
   <include if="$(arg start_base)"
            file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
@@ -132,6 +155,23 @@
     <param name="initial_pose_x" value="$(arg initial_pose_x)" />
     <param name="initial_pose_y" value="$(arg initial_pose_y)" />
     <param name="initial_pose_yaw" value="$(arg initial_pose_yaw)" />
+    <param name="goal_tolerance_m" value="$(arg nav_goal_tolerance_m)" />
+    <param name="goal_yaw_tolerance_deg" value="$(arg nav_goal_yaw_tolerance_deg)" />
+    <param name="goal_hold_s" value="$(arg nav_goal_hold_s)" />
+    <param name="stuck_timeout_s" value="$(arg nav_stuck_timeout_s)" />
+    <param name="replan_min_interval_s" value="$(arg nav_replan_min_interval_s)" />
+    <param name="blocked_replan_s" value="$(arg nav_blocked_replan_s)" />
+    <param name="front_replan_after_s" value="$(arg nav_front_replan_after_s)" />
+    <param name="lookahead_dist_m" value="$(arg nav_lookahead_dist_m)" />
+    <param name="min_tracking_speed" value="$(arg nav_min_tracking_speed)" />
+    <param name="turn_creep_speed" value="$(arg nav_turn_creep_speed)" />
+    <param name="final_slow_radius_m" value="$(arg nav_final_slow_radius_m)" />
+    <param name="final_slow_speed" value="$(arg nav_final_slow_speed)" />
+    <param name="final_creep_radius_m" value="$(arg nav_final_creep_radius_m)" />
+    <param name="final_creep_speed" value="$(arg nav_final_creep_speed)" />
+    <param name="hard_clearance_m" value="$(arg nav_hard_clearance_m)" />
+    <param name="preferred_clearance_m" value="$(arg nav_preferred_clearance_m)" />
+    <param name="smooth_clearance_m" value="$(arg nav_smooth_clearance_m)" />
   </node>
 
   <node pkg="iden_controller" type="global_first_nav_qr_room_scan.py"
@@ -149,5 +189,8 @@
     <param name="process_rate_hz" value="$(arg qr_process_rate_hz)" />
     <param name="angular_speed" value="$(arg qr_angular_speed)" />
     <param name="fetch_url" value="$(arg qr_fetch_url)" />
+    <param name="micro_sweep_deg" value="$(arg qr_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_deg" value="$(arg qr_first_wall_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_scan_s" value="$(arg qr_first_wall_micro_sweep_scan_s)" />
   </node>
 </launch>

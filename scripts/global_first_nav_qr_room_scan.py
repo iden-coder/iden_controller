@@ -21,6 +21,33 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from qr_room_spin_scan import ZBarScanner, clamp, norm_angle  # noqa: E402
 
 
+def fix_mojibake_text(text):
+    if not isinstance(text, str):
+        return text
+    # Some QR URL responses contain UTF-8 bytes that have already been decoded
+    # as GBK. Repair only when the conversion is possible and visibly improves.
+    suspicious = ("鐢", "佃", "剳", "澶", "姣", "涘", "肪", "棣", "欒", "晧")
+    if not any(token in text for token in suspicious):
+        return text
+    try:
+        repaired = text.encode("gbk").decode("utf-8")
+    except Exception:
+        return text
+    if repaired and repaired != text:
+        return repaired
+    return text
+
+
+def fix_mojibake(value):
+    if isinstance(value, str):
+        return fix_mojibake_text(value)
+    if isinstance(value, list):
+        return [fix_mojibake(item) for item in value]
+    if isinstance(value, dict):
+        return {key: fix_mojibake(item) for key, item in value.items()}
+    return value
+
+
 class GlobalFirstNavThenQR(object):
     def __init__(self):
         rospy.init_node("global_first_nav_qr_room_scan")
@@ -63,8 +90,12 @@ class GlobalFirstNavThenQR(object):
         self.micro_sweep_enabled = bool(rospy.get_param(
             "~micro_sweep_enabled", True))
         self.micro_sweep_deg = float(rospy.get_param("~micro_sweep_deg", 12.0))
+        self.first_wall_micro_sweep_deg = float(rospy.get_param(
+            "~first_wall_micro_sweep_deg", max(self.micro_sweep_deg, 26.0)))
         self.micro_sweep_scan_s = float(rospy.get_param(
             "~micro_sweep_scan_s", 1.2))
+        self.first_wall_micro_sweep_scan_s = float(rospy.get_param(
+            "~first_wall_micro_sweep_scan_s", max(self.micro_sweep_scan_s, 1.8)))
         self.micro_sweep_speed = abs(float(rospy.get_param(
             "~micro_sweep_speed", 0.28)))
 
@@ -285,17 +316,21 @@ class GlobalFirstNavThenQR(object):
             rospy.logwarn("wall_%d no QR detected", wall_index)
             return None
 
-        sweep = math.radians(abs(self.micro_sweep_deg))
+        sweep_deg = (self.first_wall_micro_sweep_deg
+                     if wall_index == 0 else self.micro_sweep_deg)
+        sweep_scan_s = (self.first_wall_micro_sweep_scan_s
+                        if wall_index == 0 else self.micro_sweep_scan_s)
+        sweep = math.radians(abs(sweep_deg))
         rospy.logwarn(
             "wall_%d no QR in center view; trying +/-%.1fdeg micro sweep",
-            wall_index, self.micro_sweep_deg)
+            wall_index, sweep_deg)
         self.turn_relative(sweep)
         rospy.sleep(max(0.15, self.settle_s * 0.5))
-        result = self.scan_current_view(wall_index, self.micro_sweep_scan_s)
+        result = self.scan_current_view(wall_index, sweep_scan_s)
         self.turn_relative(-2.0 * sweep)
         rospy.sleep(max(0.15, self.settle_s * 0.5))
         if result is None:
-            result = self.scan_current_view(wall_index, self.micro_sweep_scan_s)
+            result = self.scan_current_view(wall_index, sweep_scan_s)
         self.turn_relative(sweep)
         if result is None:
             rospy.logwarn("wall_%d no QR detected after micro sweep", wall_index)
@@ -328,11 +363,11 @@ class GlobalFirstNavThenQR(object):
                 response.raise_for_status()
                 text = response.content.decode("utf-8", errors="replace")
                 try:
-                    parsed["json"] = json.loads(text)
+                    parsed["json"] = fix_mojibake(json.loads(text))
                     parsed["type"] = "url_json"
                     parsed["text"] = None
                 except Exception:
-                    parsed["text"] = text
+                    parsed["text"] = fix_mojibake_text(text)
                     parsed["type"] = "url_text"
             except Exception as exc:
                 parsed["error"] = str(exc)
