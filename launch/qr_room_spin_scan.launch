@@ -1,0 +1,44 @@
+<launch>
+  <arg name="start_base" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="camera_width" default="1280" />
+  <arg name="camera_height" default="720" />
+  <arg name="camera_rate" default="15" />
+
+  <arg name="cmd_vel_topic" default="/cmd_vel" />
+  <arg name="odom_topic" default="/odom" />
+  <arg name="target_qr_count" default="3" />
+  <arg name="scan_per_wall_s" default="2.8" />
+  <arg name="settle_s" default="0.45" />
+  <arg name="process_rate_hz" default="12.0" />
+  <arg name="angular_speed" default="0.52" />
+  <arg name="fetch_url" default="true" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
+
+  <node if="$(arg start_camera)"
+        name="ucar_camera" pkg="ucar_camera" type="ucar_camera.py"
+        output="screen" respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="$(arg camera_topic)" />
+    <param name="device_path" value="$(arg camera_device)" />
+    <param name="image_width" value="$(arg camera_width)" />
+    <param name="image_height" value="$(arg camera_height)" />
+    <param name="rate" value="$(arg camera_rate)" />
+  </node>
+
+  <node pkg="iden_controller" type="qr_room_spin_scan.py"
+        name="qr_room_spin_scan" output="screen">
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="cmd_vel_topic" value="$(arg cmd_vel_topic)" />
+    <param name="odom_topic" value="$(arg odom_topic)" />
+    <param name="target_qr_count" value="$(arg target_qr_count)" />
+    <param name="scan_per_wall_s" value="$(arg scan_per_wall_s)" />
+    <param name="settle_s" value="$(arg settle_s)" />
+    <param name="process_rate_hz" value="$(arg process_rate_hz)" />
+    <param name="angular_speed" value="$(arg angular_speed)" />
+    <param name="fetch_url" value="$(arg fetch_url)" />
+  </node>
+</launch>
