@@ -1,0 +1,87 @@
+# Global-first single-goal navigation.
+# This file is intentionally flat because it is loaded into the node's
+# private namespace by launch/global_first_nav.launch.
+
+map_frame: map
+base_frame: base_link
+map_service: /static_map
+map_topic: /map
+pose_topic: /amcl_pose
+scan_topic: /scan
+cmd_vel_topic: /cmd_vel_raw
+
+# One final goal only. Override these from roslaunch when needed.
+goal_x: -1.50
+goal_y: -0.40
+goal_yaw: 3.1415926
+require_goal_yaw: false
+goal_tolerance_m: 0.12
+goal_yaw_tolerance_deg: 12.0
+goal_hold_s: 0.8
+
+# The car must not start moving from AMCL's default (0, 0) pose. This mission's
+# physical start is near s0 on the current map. If the real start changes,
+# override these roslaunch args/params before driving.
+publish_initial_pose_on_start: true
+initial_pose_x: 1.07
+initial_pose_y: 0.0
+initial_pose_yaw: 0.0
+initial_pose_repeat_s: 3.0
+initial_pose_period_s: 0.25
+require_start_near_initial: true
+start_pose_tolerance_m: 0.45
+start_yaw_tolerance_deg: 80.0
+
+# Global map planning. The planner first tries hard_clearance_m, then
+# automatically relaxes toward emergency_min_clearance_m if a similar map is
+# slightly noisier or narrower. Proximity cost still pushes the path toward
+# corridor centers.
+occupied_threshold: 50
+unknown_is_obstacle: true
+hard_clearance_m: 0.17
+preferred_clearance_m: 0.32
+emergency_min_clearance_m: 0.10
+smooth_clearance_m: 0.17
+allow_clearance_fallback: true
+goal_snap_radius_m: 0.45
+max_planning_time_s: 5.0
+heuristic_weight: 1.08
+proximity_weight: 2.6
+unknown_cost: 6.0
+path_spacing_m: 0.05
+
+# Local path tracking. Forward only: negative linear velocity is never emitted.
+control_rate_hz: 12.0
+lookahead_dist_m: 0.30
+rotate_in_place_angle_deg: 58.0
+max_linear_vel: 0.24
+min_tracking_speed: 0.040
+max_angular_vel: 0.78
+turn_creep_speed: 0.028
+turn_creep_front_min: 0.30
+turn_creep_side_min: 0.20
+k_heading: 1.35
+k_lateral: 0.65
+linear_accel: 0.20
+angular_accel: 1.10
+
+# Laser safety guard inside the planner. A second safety_monitor node is also
+# launched after this node as a final command filter.
+front_angle_deg: 34.0
+side_angle_min_deg: 35.0
+side_angle_max_deg: 78.0
+front_stop_m: 0.22
+front_slow_m: 0.58
+side_stop_m: 0.16
+side_slow_m: 0.32
+scan_timeout_s: 0.70
+pose_timeout_s: 5.0
+front_turn_speed: 0.18
+front_replan_after_s: 4.0
+
+# Replanning and stuck policy. Stuck never means success: the node stops and
+# replans from the current AMCL pose, then keeps trying.
+replan_min_interval_s: 2.5
+blocked_replan_s: 2.0
+stuck_timeout_s: 9.0
+progress_dist_m: 0.07

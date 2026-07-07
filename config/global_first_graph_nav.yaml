@@ -1,0 +1,97 @@
+# Global-first graph navigation.
+# New file only. It keeps map/global planning dominant and uses local control
+# only for path tracking and safety filtering.
+
+map_frame: map
+base_frame: base_link
+map_service: /static_map
+map_topic: /map
+pose_topic: /amcl_pose
+scan_topic: /scan
+cmd_vel_topic: /cmd_vel_raw
+
+# One final goal. Override from roslaunch if the destination changes.
+goal_x: -1.50
+goal_y: -0.40
+goal_yaw: 3.1415926
+require_goal_yaw: false
+goal_tolerance_m: 0.12
+goal_yaw_tolerance_deg: 12.0
+goal_hold_s: 0.8
+
+# Start pose protection. The launch file defaults match these values so direct
+# startup does not override this back to AMCL's unsafe (0, 0) default.
+publish_initial_pose_on_start: true
+initial_pose_x: 0.0
+initial_pose_y: 0.0
+initial_pose_yaw: 0.0
+initial_pose_repeat_s: 3.0
+initial_pose_period_s: 0.25
+require_start_near_initial: true
+start_pose_tolerance_m: 0.45
+start_yaw_tolerance_deg: 80.0
+
+# Global planning. A sparse roadmap/graph planner is attempted first. If a
+# similar map is noisier or the graph cannot connect, dense grid A* is used as
+# a fallback instead of ending the task.
+occupied_threshold: 50
+unknown_is_obstacle: true
+graph_enabled: true
+fallback_grid_enabled: true
+hard_clearance_m: 0.16
+preferred_clearance_m: 0.31
+emergency_min_clearance_m: 0.10
+smooth_clearance_m: 0.16
+allow_clearance_fallback: true
+goal_snap_radius_m: 0.45
+max_planning_time_s: 6.0
+graph_max_planning_time_s: 3.5
+grid_max_planning_time_s: 4.0
+heuristic_weight: 1.05
+proximity_weight: 2.6
+unknown_cost: 6.0
+path_spacing_m: 0.05
+
+# Roadmap sampling. Smaller stride makes a richer graph; larger stride is
+# faster. These values are conservative for narrow indoor maps.
+graph_sample_stride_m: 0.16
+graph_connect_radius_m: 0.78
+graph_start_goal_radius_m: 1.00
+graph_max_neighbors: 18
+graph_start_goal_neighbors: 32
+graph_max_nodes: 4200
+
+# Local path tracking. Forward only: negative linear velocity is never emitted.
+control_rate_hz: 12.0
+lookahead_dist_m: 0.40
+rotate_in_place_angle_deg: 30.0
+max_linear_vel: 0.50
+min_tracking_speed: 0.15
+max_angular_vel: 1.00
+turn_creep_speed: 0.08
+turn_creep_front_min: 0.24
+turn_creep_side_min: 0.14
+k_heading: 1.40
+k_lateral: 0.60
+linear_accel: 0.40
+angular_accel: 1.50
+
+# Planner-internal laser guard — behavioural layer: slows and steers away.
+# The external safety_monitor is the hard final wall (stricter thresholds).
+front_angle_deg: 36.0
+side_angle_min_deg: 35.0
+side_angle_max_deg: 80.0
+front_stop_m: 0.20
+front_slow_m: 0.24
+side_stop_m: 0.13
+side_slow_m: 0.18
+scan_timeout_s: 0.70
+pose_timeout_s: 5.0
+front_turn_speed: 0.35
+front_replan_after_s: 1.0
+
+# Stuck never means success: stop, replan globally, and keep trying.
+replan_min_interval_s: 1.2
+blocked_replan_s: 0.8
+stuck_timeout_s: 3.5
+progress_dist_m: 0.08

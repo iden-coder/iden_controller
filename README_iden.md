@@ -7,3 +7,6 @@ rosrun iden_controller cruise_demo.py
 
  roslaunch iden_controller cruise_navfn_success1.launch
  rosrun iden_controller process_navfn_success1.py
+
+roslaunch iden_controller cruise_navfn_success2.launch
+ rosrun iden_controller process_navfn_success2.py
