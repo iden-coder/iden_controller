@@ -4,6 +4,9 @@
   <arg name="goal_x" default="-1.50" />
   <arg name="goal_y" default="-0.40" />
   <arg name="goal_yaw" default="3.1415926" />
+  <arg name="waypoint_enabled" default="true" />
+  <arg name="waypoint_x" default="-0.33" />
+  <arg name="waypoint_y" default="-1.02" />
   <arg name="initial_pose_x" default="0.0" />
   <arg name="initial_pose_y" default="0.0" />
   <arg name="initial_pose_yaw" default="0.0" />
@@ -81,12 +84,12 @@
     <param name="enabled" value="true" />
     <param name="swap_left_right" value="false" />
     <param name="front_stop_m" value="0.24" />
-    <param name="front_critical_m" value="0.18" />
-    <param name="front_slow_m" value="0.38" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_slow_m" value="0.35" />
     <param name="side_stop_m" value="0.16" />
-    <param name="side_critical_m" value="0.13" />
-    <param name="side_avoid_m" value="0.20" />
-    <param name="side_slow_m" value="0.25" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_avoid_m" value="0.18" />
+    <param name="side_slow_m" value="0.23" />
     <param name="rear_stop_m" value="0.24" />
     <param name="front_angle_deg" value="34.0" />
     <param name="side_angle_min_deg" value="35.0" />
@@ -114,6 +117,9 @@
     <param name="goal_x" value="$(arg goal_x)" />
     <param name="goal_y" value="$(arg goal_y)" />
     <param name="goal_yaw" value="$(arg goal_yaw)" />
+    <param name="waypoint_enabled" value="$(arg waypoint_enabled)" />
+    <param name="waypoint_x" value="$(arg waypoint_x)" />
+    <param name="waypoint_y" value="$(arg waypoint_y)" />
     <param name="initial_pose_x" value="$(arg initial_pose_x)" />
     <param name="initial_pose_y" value="$(arg initial_pose_y)" />
     <param name="initial_pose_yaw" value="$(arg initial_pose_yaw)" />

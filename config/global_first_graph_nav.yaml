@@ -19,6 +19,14 @@ goal_tolerance_m: 0.07
 goal_yaw_tolerance_deg: 7.0
 goal_hold_s: 1.0
 
+# Required pass-through point before the final goal. This point is only used
+# as a position target; final heading is still enforced at the final goal.
+waypoint_enabled: true
+waypoint_x: -0.33
+waypoint_y: -1.02
+waypoint_tolerance_m: 0.12
+waypoint_hold_s: 0.0
+
 # Current baseline start pose.
 publish_initial_pose_on_start: true
 initial_pose_x: 0.0
@@ -71,8 +79,8 @@ max_linear_vel: 0.60
 min_tracking_speed: 0.18
 max_angular_vel: 0.95
 turn_creep_speed: 0.12
-turn_creep_front_min: 0.30
-turn_creep_side_min: 0.17
+turn_creep_front_min: 0.28
+turn_creep_side_min: 0.16
 k_heading: 1.20
 k_lateral: 0.48
 linear_accel: 0.62
@@ -91,9 +99,9 @@ front_angle_deg: 30.0
 side_angle_min_deg: 35.0
 side_angle_max_deg: 76.0
 front_stop_m: 0.24
-front_slow_m: 0.38
+front_slow_m: 0.35
 side_stop_m: 0.16
-side_slow_m: 0.25
+side_slow_m: 0.23
 scan_timeout_s: 0.70
 pose_timeout_s: 5.0
 front_turn_speed: 0.28
@@ -104,8 +112,8 @@ front_replan_after_s: 1.6
 # replan globally around it instead of bouncing in place.
 dynamic_obstacles_enabled: true
 dynamic_obstacle_radius_m: 0.16
-dynamic_obstacle_record_range_m: 0.38
-dynamic_obstacle_trigger_m: 0.24
+dynamic_obstacle_record_range_m: 0.35
+dynamic_obstacle_trigger_m: 0.22
 dynamic_obstacle_range_pad_m: 0.01
 dynamic_obstacle_min_interval_s: 2.0
 dynamic_obstacle_max_cells: 3500
