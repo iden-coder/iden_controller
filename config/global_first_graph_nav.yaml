@@ -34,14 +34,22 @@ start_yaw_tolerance_deg: 80.0
 # Global planning. A sparse roadmap/graph planner is attempted first. If a
 # similar map is noisier or the graph cannot connect, dense grid A* is used as
 # a fallback instead of ending the task.
+#
+# Robot footprint: 0.342m x 0.256m (from costmap_common_params.yaml)
+#   half_length = 0.171m, half_width = 0.128m, half_diag = 0.214m
+#   Straight-line motion needs clearance >= half_width (0.128m)
+#   Turning/corners need clearance >= half_diag (0.214m)
+robot_half_length: 0.171
+robot_half_width: 0.128
+robot_half_diag: 0.214
 occupied_threshold: 50
 unknown_is_obstacle: true
 graph_enabled: true
 fallback_grid_enabled: true
 hard_clearance_m: 0.16
-preferred_clearance_m: 0.31
-emergency_min_clearance_m: 0.10
-smooth_clearance_m: 0.16
+preferred_clearance_m: 0.30
+emergency_min_clearance_m: 0.14
+smooth_clearance_m: 0.22
 allow_clearance_fallback: true
 goal_snap_radius_m: 0.45
 max_planning_time_s: 6.0
@@ -81,10 +89,10 @@ angular_accel: 1.50
 front_angle_deg: 36.0
 side_angle_min_deg: 35.0
 side_angle_max_deg: 80.0
-front_stop_m: 0.20
-front_slow_m: 0.24
-side_stop_m: 0.13
-side_slow_m: 0.18
+front_stop_m: 0.22
+front_slow_m: 0.30
+side_stop_m: 0.16
+side_slow_m: 0.24
 scan_timeout_s: 0.70
 pose_timeout_s: 5.0
 front_turn_speed: 0.35

@@ -1316,7 +1316,13 @@ class RosGlobalFirstGraphNavigator:
                 self.plan_from_current_pose("front blocked", force=True)
 
             if self.left < self.side_stop_m and self.right < self.side_stop_m:
-                return 0.0, 0.0
+                # Deadlocked: front blocked + both sides tight.
+                # Turn slowly toward the side with more room to wiggle out.
+                wiggle_wz = 0.08
+                if self.left > self.right:
+                    return 0.0, wiggle_wz
+                else:
+                    return 0.0, -wiggle_wz
             turn_sign = 1.0 if self.left >= self.right else -1.0
             if turn_sign > 0.0 and self.left < self.side_stop_m:
                 turn_sign = -1.0
