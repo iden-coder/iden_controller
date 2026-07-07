@@ -1482,6 +1482,13 @@ class RosGlobalFirstGraphNavigator:
                 angular = 0.0
             if angular < 0.0 and self.right < self.side_stop_m:
                 angular = 0.0
+            if abs(angular) < 0.08:
+                if self.left < self.side_stop_m and self.right < self.side_stop_m:
+                    angular = 0.12 if self.left >= self.right else -0.12
+                elif self.left < self.side_stop_m:
+                    angular = -0.12
+                else:
+                    angular = 0.12
         elif side_min < self.side_slow_m:
             t = (side_min - self.side_stop_m) / max(
                 self.side_slow_m - self.side_stop_m, 1.0e-3)

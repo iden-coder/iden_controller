@@ -208,6 +208,13 @@ class GlobalFirstSafetyMonitor:
                 wz = -self.min_turn_wz
             if self.min_right < self.side_stop and wz < 0.0:
                 wz = self.min_turn_wz
+            if abs(wz) < self.min_turn_wz:
+                if self.min_left < self.side_stop and self.min_right < self.side_stop:
+                    wz = self.min_turn_wz if self.min_left >= self.min_right else -self.min_turn_wz
+                elif self.min_left < self.side_stop:
+                    wz = -self.min_turn_wz
+                else:
+                    wz = self.min_turn_wz
             return 0.0, clamp(wz, -self.max_turn_wz, self.max_turn_wz), "STOP_SIDE"
 
         if self.min_left < self.side_avoid and wz > 0.0:
