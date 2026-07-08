@@ -17,6 +17,7 @@ STATE_WAITING_VOICE = 0
 STATE_NAV_AND_SCAN = 1
 STATE_REASONING = 2
 STATE_DONE = 3
+STATE_POST_ROUTE = 4
 STATE_ERROR = -1
 
 
@@ -25,6 +26,15 @@ WAREHOUSE_BY_CATEGORY = {
     "日用品类": "日用品加工车间",
     "电子产品类": "电子产品生产车间",
 }
+
+
+POST_ROUTE_POINTS = [
+    ("start", -0.85, -1.41, -1.5707963268),
+    ("d1", -1.63, -2.57, 3.1415926536),
+    ("d2", 0.41, -1.60, 1.5707963268),
+    ("d3", 2.54, -2.81, -1.5707963268),
+    ("d4", 0.373, -3.50, -1.5707963268),
+]
 
 
 MOJIBAKE_REPLACEMENTS = {
@@ -72,6 +82,16 @@ def repair_mojibake_text(text):
     return text
 
 
+def fix_mojibake(value):
+    if isinstance(value, str):
+        return normalize_text(value)
+    if isinstance(value, list):
+        return [fix_mojibake(item) for item in value]
+    if isinstance(value, dict):
+        return {key: fix_mojibake(item) for key, item in value.items()}
+    return value
+
+
 def as_bool(value):
     if isinstance(value, bool):
         return value
@@ -89,6 +109,7 @@ def first_json_object(text):
     text = normalize_text(text)
     if not text:
         return None
+    text = text.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
     try:
         return json.loads(text)
     except Exception:
@@ -105,7 +126,7 @@ def first_json_object(text):
 
 class Subtask1RealOrderFusion(object):
     def __init__(self):
-        rospy.init_node("subtask1_real_order_fusion")
+        rospy.init_node("subtask1_real_order_fusion_route")
 
         self.voice_topic = rospy.get_param("~voice_topic", "/factory/voice_raw_text")
         self.qr_summary_topic = rospy.get_param("~qr_summary_topic", "/qr_room_scan_results")
@@ -131,6 +152,22 @@ class Subtask1RealOrderFusion(object):
             "~nav_launch_file", "global_first_graph_nav_qr_room.launch")
         self.nav_roslaunch_args = rospy.get_param("~nav_roslaunch_args", "")
         self.nav_start_delay_s = float(rospy.get_param("~nav_start_delay_s", 0.5))
+        self.post_route_enabled = as_bool(rospy.get_param("~post_route_enabled", True))
+        self.post_route_launch_pkg = rospy.get_param(
+            "~post_route_launch_pkg", "iden_controller")
+        self.post_route_launch_file = rospy.get_param(
+            "~post_route_launch_file", "global_first_graph_nav_2249fcf.launch")
+        self.post_route_wait_after_tts_s = float(rospy.get_param(
+            "~post_route_wait_after_tts_s", 4.0))
+        self.post_route_goal_timeout_s = float(rospy.get_param(
+            "~post_route_goal_timeout_s", 180.0))
+        self.post_route_hold_after_goal_s = float(rospy.get_param(
+            "~post_route_hold_after_goal_s", 0.8))
+        self.post_route_status_topic = rospy.get_param(
+            "~post_route_status_topic", "/global_first_graph_nav/status")
+        self.post_route_node_name = rospy.get_param(
+            "~post_route_node_name", "/global_first_graph_nav")
+        self.post_route_map_yaml = rospy.get_param("~post_route_map_yaml", "")
 
         self.use_spark = as_bool(rospy.get_param("~use_spark", True))
         self.require_spark_decision = as_bool(rospy.get_param(
@@ -148,12 +185,16 @@ class Subtask1RealOrderFusion(object):
         self.voice_text = ""
         self.target_category = ""
         self.qr_items = []
+        self.qr_evidence = []
         self.qr_summary = None
         self.nav_process = None
+        self.post_route_process = None
         self.nav_started = False
         self.decision_done = False
+        self.post_route_started = False
         self.awakened = False
         self.last_reject_prompt_time = 0.0
+        self.latest_nav_status = ""
 
         self.tts_pub = rospy.Publisher(self.tts_topic, String, queue_size=10)
         self.result_pub = rospy.Publisher(
@@ -165,6 +206,8 @@ class Subtask1RealOrderFusion(object):
 
         rospy.Subscriber(self.voice_topic, String, self.voice_callback, queue_size=5)
         rospy.Subscriber(self.qr_summary_topic, String, self.qr_summary_callback, queue_size=3)
+        rospy.Subscriber(
+            self.post_route_status_topic, String, self.nav_status_callback, queue_size=10)
 
         self.publish_state(STATE_WAITING_VOICE)
         rospy.loginfo("subtask1 real-only fusion ready; waiting voice on %s", self.voice_topic)
@@ -176,6 +219,9 @@ class Subtask1RealOrderFusion(object):
 
     def publish_state(self, state):
         self.state_pub.publish(Int32(data=int(state)))
+
+    def nav_status_callback(self, msg):
+        self.latest_nav_status = normalize_text(msg.data).lower()
 
     def voice_callback(self, msg):
         text = normalize_text(msg.data)
@@ -294,64 +340,124 @@ class Subtask1RealOrderFusion(object):
             rospy.logwarn("invalid QR summary ignored: %s", msg.data[:120])
             return
         items = self.extract_items_from_summary(summary)
+        evidence = self.build_qr_evidence(summary)
         with self.lock:
             self.qr_summary = summary
             self.qr_items = items
+            self.qr_evidence = evidence
         rospy.loginfo("QR summary accepted: %s", items)
         self.try_decide()
 
     def extract_items_from_summary(self, summary):
         items = []
-        for result in summary.get("wall_results", []):
-            item = self.extract_item_from_wall_result(result)
-            if item and item not in items:
-                items.append(item)
-        for result in summary.get("results", []):
-            item = self.extract_item_from_wall_result(result)
-            if item and item not in items:
-                items.append(item)
+        for result in self.iter_qr_results(summary):
+            for item in self.extract_items_from_wall_result(result):
+                if item and item not in items:
+                    items.append(item)
         return items
 
+    def iter_qr_results(self, summary):
+        seen = set()
+        for key in ("wall_results", "results", "detections", "qrs", "items"):
+            values = summary.get(key, [])
+            if isinstance(values, dict):
+                values = list(values.values())
+            if not isinstance(values, list):
+                continue
+            for result in values:
+                if not isinstance(result, dict):
+                    continue
+                stamp = result.get("stamp")
+                raw = normalize_text(result.get("raw"))
+                identity = (result.get("wall_index"), stamp, raw)
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                yield result
+
     def extract_item_from_wall_result(self, result):
+        items = self.extract_items_from_wall_result(result)
+        return items[0] if items else ""
+
+    def extract_items_from_wall_result(self, result):
         if not isinstance(result, dict):
-            return ""
+            return []
+        candidates = []
         parsed = result.get("parsed")
         if isinstance(parsed, dict):
-            item = self.extract_item_from_any(parsed.get("json"))
-            if item:
-                return item
-            item = self.extract_item_from_any(parsed.get("text"))
-            if item:
-                return item
-        return self.extract_item_from_any(result.get("raw"))
+            candidates.extend(self.extract_items_from_any(parsed.get("json")))
+            candidates.extend(self.extract_items_from_any(parsed.get("text")))
+        candidates.extend(self.extract_items_from_any(result.get("raw")))
+        cleaned = []
+        for item in candidates:
+            item = self.clean_candidate_item(item)
+            if item and item not in cleaned:
+                cleaned.append(item)
+        return cleaned
 
     def extract_item_from_any(self, value):
+        items = self.extract_items_from_any(value)
+        return items[0] if items else ""
+
+    def extract_items_from_any(self, value):
         if value is None:
-            return ""
+            return []
         if isinstance(value, dict):
+            items = []
             for key in ("result", "name", "item", "goods", "product", "货品", "物品", "名称"):
                 item = normalize_text(value.get(key))
                 if item:
-                    return item
+                    items.append(item)
             for nested in value.values():
-                item = self.extract_item_from_any(nested)
-                if item:
-                    return item
-            return ""
+                items.extend(self.extract_items_from_any(nested))
+            return items
         if isinstance(value, list):
+            items = []
             for nested in value:
-                item = self.extract_item_from_any(nested)
-                if item:
-                    return item
-            return ""
+                items.extend(self.extract_items_from_any(nested))
+            return items
         text = normalize_text(value)
         parsed = first_json_object(text)
         if parsed is not None and parsed is not value:
-            item = self.extract_item_from_any(parsed)
-            if item:
-                return item
-        match = re.search(r"[\u4e00-\u9fffA-Za-z0-9]+", text)
-        return match.group(0) if match else ""
+            parsed_items = self.extract_items_from_any(parsed)
+            if parsed_items:
+                return parsed_items
+        if text.startswith("http://") or text.startswith("https://"):
+            return []
+        tokens = re.findall(r"[\u4e00-\u9fffA-Za-z0-9_+-]+", text)
+        return tokens
+
+    def clean_candidate_item(self, item):
+        item = normalize_text(item)
+        if not item:
+            return ""
+        item = item.strip(" \t\r\n:：,，;；。\"'[]{}()（）")
+        if not item or item.lower().startswith(("http", "www")):
+            return ""
+        if item.lower() in ("code", "result", "url", "json", "text", "none", "null", "true", "false"):
+            return ""
+        if item.isdigit():
+            return ""
+        if len(item) > 24:
+            return ""
+        return item
+
+    def build_qr_evidence(self, summary):
+        evidence = []
+        for result in self.iter_qr_results(summary):
+            parsed = result.get("parsed") if isinstance(result.get("parsed"), dict) else {}
+            entry = {
+                "wall_index": result.get("wall_index"),
+                "raw": normalize_text(result.get("raw")),
+                "parsed_type": normalize_text(parsed.get("type")),
+                "url": normalize_text(parsed.get("url")),
+                "json": fix_mojibake(parsed.get("json")),
+                "text": normalize_text(parsed.get("text")),
+                "error": normalize_text(parsed.get("error")),
+                "candidate_items": self.extract_items_from_wall_result(result),
+            }
+            evidence.append(entry)
+        return evidence
 
     def try_decide(self):
         with self.lock:
@@ -360,6 +466,7 @@ class Subtask1RealOrderFusion(object):
             voice_text = self.voice_text
             category = self.target_category
             items = list(self.qr_items)
+            evidence = list(self.qr_evidence)
         if not voice_text:
             return
         if len(items) < self.required_item_count:
@@ -372,10 +479,11 @@ class Subtask1RealOrderFusion(object):
                 return
             self.decision_done = True
         self.publish_state(STATE_REASONING)
-        threading.Thread(target=self.decide_thread, args=(voice_text, category, items),
+        threading.Thread(target=self.decide_thread, args=(voice_text, category, items, evidence),
                          daemon=True).start()
 
-    def decide_thread(self, voice_text, category, items):
+    def decide_thread(self, voice_text, category, items, evidence=None):
+        evidence = evidence or []
         if not category:
             category = self.extract_target_category(voice_text)
         if not category:
@@ -388,7 +496,7 @@ class Subtask1RealOrderFusion(object):
             self.publish_error("星火大模型未配置，不能进行货品筛选")
             return
 
-        selected_item = self.select_item_with_spark(category, items)
+        selected_item = self.select_item_with_spark(category, items, evidence)
         if not selected_item:
             self.publish_error("星火大模型未能从二维码中选出目标货品")
             return
@@ -415,7 +523,86 @@ class Subtask1RealOrderFusion(object):
             "sim_ignored": True,
         }, ensure_ascii=False)))
         self.speak(text)
+        if self.post_route_enabled:
+            self.start_post_route_after_tts()
+        else:
+            self.publish_state(STATE_DONE)
+
+    def start_post_route_after_tts(self):
+        with self.lock:
+            if self.post_route_started:
+                return
+            self.post_route_started = True
+        threading.Thread(target=self.post_route_thread, daemon=True).start()
+
+    def post_route_thread(self):
+        self.publish_state(STATE_POST_ROUTE)
+        rospy.loginfo(
+            "waiting %.1fs for TTS before post-route navigation",
+            self.post_route_wait_after_tts_s)
+        rospy.sleep(max(0.0, self.post_route_wait_after_tts_s))
+
+        for name, x, y, yaw in POST_ROUTE_POINTS:
+            if rospy.is_shutdown():
+                return
+            ok = self.navigate_post_point(name, x, y, yaw)
+            if not ok:
+                self.publish_error("后续点位{}导航超时或失败".format(name))
+                return
+            rospy.sleep(max(0.0, self.post_route_hold_after_goal_s))
+
+        done_text = "后续点位导航完成。"
+        self.speak(done_text)
+        payload = {
+            "status": "post_route_complete",
+            "points": [pt[0] for pt in POST_ROUTE_POINTS],
+            "stamp": time.time(),
+        }
+        self.result_pub.publish(String(data=json.dumps(payload, ensure_ascii=False)))
         self.publish_state(STATE_DONE)
+
+    def navigate_post_point(self, name, x, y, yaw):
+        self.kill_post_nav_node()
+        self.latest_nav_status = ""
+        command = [
+            "roslaunch",
+            self.post_route_launch_pkg,
+            self.post_route_launch_file,
+            "goal_x:={:.3f}".format(x),
+            "goal_y:={:.3f}".format(y),
+            "goal_yaw:={:.10f}".format(yaw),
+        ]
+        if self.post_route_map_yaml:
+            command.append("map_yaml:={}".format(self.post_route_map_yaml))
+        rospy.logwarn("post-route navigating to %s: x=%.3f y=%.3f yaw=%.2f",
+                      name, x, y, yaw)
+        try:
+            self.post_route_process = subprocess.Popen(command)
+        except Exception as exc:
+            rospy.logerr("failed to launch post-route nav for %s: %s", name, exc)
+            return False
+
+        start = rospy.Time.now()
+        rate = rospy.Rate(5)
+        while not rospy.is_shutdown():
+            status = self.latest_nav_status
+            if "goal reached" in status:
+                rospy.logwarn("post-route point %s reached", name)
+                self.kill_post_nav_node()
+                return True
+            if (rospy.Time.now() - start).to_sec() > self.post_route_goal_timeout_s:
+                rospy.logerr("post-route point %s timeout; last status=%s", name, status)
+                self.kill_post_nav_node()
+                return False
+            rate.sleep()
+        return False
+
+    def kill_post_nav_node(self):
+        try:
+            subprocess.call(["rosnode", "kill", self.post_route_node_name])
+        except Exception:
+            pass
+        self.post_route_process = None
 
     def infer_category_with_spark_or_local(self, voice_text, items):
         category = self.extract_target_category(voice_text)
@@ -434,25 +621,82 @@ class Subtask1RealOrderFusion(object):
         text = self.extract_spark_content(data)
         return self.normalize_category(text)
 
-    def select_item_with_spark(self, category, items):
+    def select_item_with_spark(self, category, items, evidence=None):
         if not self.spark_ready():
             return ""
-        prompt = (
-            "你是无人工厂现实环境货品筛选节点。"
-            "仿真环境任务全部忽略。"
-            "目标大类只能是食品加工类、日用品类、电子产品类。"
-            "请从候选货品中选择唯一属于目标大类的货品，并返回严格JSON："
-            "{{\"selected_item\":\"货品名称\"}}。"
-            "目标大类：{}。候选货品：{}。"
-        ).format(category, "、".join(items))
-        data = self.call_spark(prompt, max_tokens=120)
-        content = self.extract_spark_content(data)
-        obj = first_json_object(content)
-        if isinstance(obj, dict):
-            selected = normalize_text(obj.get("selected_item"))
-            if selected in items:
-                return selected
+        evidence = evidence or []
+        candidates = []
         for item in items:
+            clean = self.clean_candidate_item(item)
+            if clean and clean not in candidates:
+                candidates.append(clean)
+        rospy.loginfo("SPARK_DECISION_START category=%s candidates=%s evidence_count=%d",
+                      category, candidates, len(evidence))
+        prompt_payload = {
+            "target_category": category,
+            "candidate_items": candidates,
+            "qr_evidence": evidence,
+            "rules": [
+                "只处理现实环境任务，忽略仿真环境。",
+                "必须根据目标大类从二维码候选货品中选择一个。",
+                "优先从 candidate_items 中选择；如果 candidate_items 是乱码或不完整，可以参考 qr_evidence 中的 raw/json/text/url。",
+                "不要创造二维码中没有出现过的货品。",
+                "只返回 JSON，不要解释。",
+            ],
+            "required_output": {
+                "selected_item": "从二维码中选出的货品原名或修正后的中文名",
+                "reason": "极短理由",
+            },
+        }
+        prompt = (
+            "你是无人工厂现实环境货品筛选节点。请读取以下JSON任务数据，"
+            "从二维码候选货品中选择属于目标大类的唯一货品。"
+            "输出必须是严格JSON，格式为 {\"selected_item\":\"货品名称\",\"reason\":\"简短理由\"}。\n"
+            + json.dumps(prompt_payload, ensure_ascii=False)
+        )
+        for attempt in range(2):
+            data = self.call_spark(prompt, max_tokens=180)
+            content = self.extract_spark_content(data)
+            selected = self.parse_selected_item_from_spark(content, candidates)
+            if selected:
+                rospy.loginfo("SPARK_DECISION_OK selected_item=%s raw_content=%s",
+                              selected, content[:200])
+                return selected
+            rospy.logwarn("Spark response could not be parsed on attempt %d: %s",
+                          attempt + 1, content[:200])
+            prompt += "\n上一次返回无法解析。请只返回JSON，例如：{\"selected_item\":\"香蕉\",\"reason\":\"属于食品加工类\"}。"
+        return ""
+
+    def parse_selected_item_from_spark(self, content, candidates):
+        content = normalize_text(content)
+        if not content:
+            return ""
+        obj = first_json_object(content)
+        values = []
+        if isinstance(obj, dict):
+            for key in ("selected_item", "item", "name", "goods", "product", "货品", "物品", "result"):
+                value = normalize_text(obj.get(key))
+                if value:
+                    values.append(value)
+            index_value = obj.get("index")
+            if isinstance(index_value, int) and 0 <= index_value < len(candidates):
+                values.append(candidates[index_value])
+            elif isinstance(index_value, str) and index_value.isdigit():
+                idx = int(index_value)
+                if 0 <= idx < len(candidates):
+                    values.append(candidates[idx])
+        values.append(content)
+        for value in values:
+            value = self.clean_candidate_item(value)
+            if not value:
+                continue
+            for item in candidates:
+                if value == item:
+                    return item
+            for item in candidates:
+                if value in item or item in value:
+                    return item
+        for item in candidates:
             if item and item in content:
                 return item
         return ""
@@ -477,6 +721,7 @@ class Subtask1RealOrderFusion(object):
 
     def call_spark(self, prompt, max_tokens=120):
         if not self.spark_ready():
+            rospy.logwarn("SPARK_CALL_SKIPPED reason=missing_key_or_disabled")
             return None
         try:
             import requests
@@ -494,15 +739,22 @@ class Subtask1RealOrderFusion(object):
                 "temperature": 0.05,
                 "max_tokens": int(max_tokens),
             }
+            rospy.loginfo("SPARK_CALL_START model=%s max_tokens=%d prompt_chars=%d",
+                          self.spark_model, int(max_tokens), len(prompt))
+            started = time.time()
             resp = requests.post(
                 self.spark_url, headers=headers, json=payload,
                 timeout=self.spark_timeout_s)
+            elapsed = time.time() - started
             if resp.status_code != 200:
-                rospy.logwarn("Spark request failed: %s %s", resp.status_code, resp.text[:200])
+                rospy.logwarn("SPARK_HTTP_FAIL status=%s elapsed=%.2fs body=%s",
+                              resp.status_code, elapsed, resp.text[:200])
                 return None
+            rospy.loginfo("SPARK_HTTP_OK status=%s elapsed=%.2fs response_chars=%d",
+                          resp.status_code, elapsed, len(resp.text))
             return resp.json()
         except Exception as exc:
-            rospy.logwarn("Spark request exception: %s", exc)
+            rospy.logwarn("SPARK_CALL_EXCEPTION %s", exc)
             return None
 
     def extract_spark_content(self, data):

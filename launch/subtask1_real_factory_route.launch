@@ -27,8 +27,8 @@
         name="cloud_asr_test2" output="screen"
         respawn="true" respawn_delay="0.8" />
 
-  <node pkg="iden_controller" type="subtask1_real_order_fusion.py"
-        name="subtask1_real_order_fusion" output="screen">
+  <node pkg="iden_controller" type="subtask1_real_order_fusion_route.py"
+        name="subtask1_real_order_fusion_route" output="screen">
     <param name="voice_topic" value="/factory/voice_raw_text" />
     <param name="qr_summary_topic" value="/qr_room_scan_results" />
     <param name="tts_topic" value="/factory/tts_text" />
@@ -51,5 +51,14 @@
     <param name="require_spark_decision" value="true" />
     <param name="spark_api_key" value="$(arg spark_api_key)" />
     <param name="spark_api_secret" value="$(arg spark_api_secret)" />
+    <param name="post_route_enabled" value="false" />
+    <param name="post_route_launch_pkg" value="iden_controller" />
+    <param name="post_route_launch_file" value="global_first_graph_nav_2249fcf_post_route.launch" />
+    <param name="post_route_wait_after_tts_s" value="5.0" />
+    <param name="post_route_goal_timeout_s" value="180.0" />
+    <param name="post_route_hold_after_goal_s" value="0.8" />
+    <param name="post_route_status_topic" value="/global_first_graph_nav/status" />
+    <param name="post_route_node_name" value="/global_first_graph_nav" />
+    <param name="post_route_map_yaml" value="$(arg map_yaml)" />
   </node>
 </launch>

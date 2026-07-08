@@ -267,6 +267,9 @@ class GlobalFirstGraphPlanner:
 
     def plan(self, start_world, goal_world):
         hard = float(self.params.get("hard_clearance_m", 0.16))
+        footprint_clearance = float(self.params.get(
+            "footprint_planning_clearance_m", hard))
+        hard = max(hard, footprint_clearance)
         emergency = float(self.params.get("emergency_min_clearance_m", hard))
         allow_fallback = bool(self.params.get("allow_clearance_fallback", True))
         attempts = [hard]
@@ -855,12 +858,6 @@ class RosGlobalFirstGraphNavigator:
         self.goal_yaw_tolerance = math.radians(
             rospy.get_param("~goal_yaw_tolerance_deg", 12.0))
         self.goal_hold_s = rospy.get_param("~goal_hold_s", 0.8)
-        self.waypoint_enabled = rospy.get_param("~waypoint_enabled", False)
-        self.waypoint_x = rospy.get_param("~waypoint_x", 0.0)
-        self.waypoint_y = rospy.get_param("~waypoint_y", 0.0)
-        self.waypoint_tolerance = rospy.get_param(
-            "~waypoint_tolerance_m", max(self.goal_tolerance, 0.12))
-        self.waypoint_hold_s = rospy.get_param("~waypoint_hold_s", 0.0)
 
         self.publish_initial_pose_on_start = rospy.get_param(
             "~publish_initial_pose_on_start", True)
@@ -876,6 +873,8 @@ class RosGlobalFirstGraphNavigator:
 
         self.params = {
             "hard_clearance_m": rospy.get_param("~hard_clearance_m", 0.16),
+            "footprint_planning_clearance_m": rospy.get_param(
+                "~footprint_planning_clearance_m", 0.16),
             "preferred_clearance_m": rospy.get_param("~preferred_clearance_m", 0.30),
             "emergency_min_clearance_m": rospy.get_param(
                 "~emergency_min_clearance_m", 0.10),
@@ -971,14 +970,12 @@ class RosGlobalFirstGraphNavigator:
 
         self.path_world = []
         self.path_index = 0
-        self.goal_stage = 0
-        self.active_goal = self.current_target_world()
+        self.active_goal = (self.goal_x, self.goal_y)
         self.finished = False
         self.start_pose_accepted = not self.require_start_near_initial
         self.initial_pose_start_time = None
         self.initial_pose_last_pub = rospy.Time(0)
         self.goal_enter_time = None
-        self.waypoint_enter_time = None
         self.last_plan_time = rospy.Time(0)
         self.last_blocked_replan = rospy.Time(0)
         self.last_progress_time = rospy.Time.now()
@@ -1170,22 +1167,6 @@ class RosGlobalFirstGraphNavigator:
             return True
         return (self.rospy.Time.now() - self.pose_time).to_sec() <= self.pose_timeout_s
 
-    def waypoint_stage_active(self):
-        return self.waypoint_enabled and self.goal_stage == 0
-
-    def current_target_world(self):
-        if self.waypoint_stage_active():
-            return self.waypoint_x, self.waypoint_y
-        return self.goal_x, self.goal_y
-
-    def current_target_label(self):
-        return "waypoint" if self.waypoint_stage_active() else "final goal"
-
-    def current_target_tolerance(self):
-        if self.waypoint_stage_active():
-            return self.waypoint_tolerance
-        return self.goal_tolerance
-
     def update_pose_from_tf(self):
         try:
             trans, rot = self.tf_listener.lookupTransform(
@@ -1207,11 +1188,10 @@ class RosGlobalFirstGraphNavigator:
 
         self.last_plan_time = now
         start = (self.pose[0], self.pose[1])
-        goal = self.current_target_world()
-        label = self.current_target_label()
+        goal = (self.goal_x, self.goal_y)
         self.rospy.logwarn(
-            "GlobalFirstGraphNav: planning %s to %s from (%.2f, %.2f) to (%.2f, %.2f)",
-            reason, label, start[0], start[1], goal[0], goal[1])
+            "GlobalFirstGraphNav: planning %s from (%.2f, %.2f) to (%.2f, %.2f)",
+            reason, start[0], start[1], goal[0], goal[1])
         result = self.planner.plan(start, goal)
         if not result["ok"]:
             self.replan_fail_count += 1
@@ -1306,7 +1286,7 @@ class RosGlobalFirstGraphNavigator:
             self.publish_zero("NO_SCAN")
             return
         if not self.path_world:
-            if not self.plan_from_current_pose("initial", force=True):
+            if not self.plan_from_current_pose("initial", force=False):
                 return
 
         if self.check_goal():
@@ -1329,33 +1309,9 @@ class RosGlobalFirstGraphNavigator:
 
     def check_goal(self):
         dist = self.distance_to_active_goal()
-        if dist > self.current_target_tolerance():
+        if dist > self.goal_tolerance:
             self.goal_enter_time = None
-            self.waypoint_enter_time = None
             return False
-
-        if self.waypoint_stage_active():
-            now = self.rospy.Time.now()
-            if self.waypoint_enter_time is None:
-                self.waypoint_enter_time = now
-                self.publish_zero("WAYPOINT_HOLD")
-                return True
-            if (now - self.waypoint_enter_time).to_sec() < self.waypoint_hold_s:
-                self.publish_zero("WAYPOINT_HOLD")
-                return True
-            self.goal_stage = 1
-            self.waypoint_enter_time = None
-            self.goal_enter_time = None
-            self.path_world = []
-            self.path_index = 0
-            self.active_goal = self.current_target_world()
-            self.last_cmd = (0.0, 0.0)
-            self.publish_zero("WAYPOINT_REACHED")
-            self.log_status(
-                "waypoint reached near (%.2f, %.2f); replanning to final goal" %
-                (self.waypoint_x, self.waypoint_y))
-            self.plan_from_current_pose("waypoint reached", force=True)
-            return True
 
         yaw_ok = True
         if self.require_goal_yaw:
