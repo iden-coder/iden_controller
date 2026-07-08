@@ -54,6 +54,12 @@
   <arg name="qr_process_rate_hz" default="12.0" />
   <arg name="qr_angular_speed" default="0.52" />
   <arg name="qr_fetch_url" default="true" />
+  <arg name="qr_fetch_timeout_s" default="6.0" />
+  <arg name="qr_fetch_retries" default="3" />
+  <arg name="qr_fetch_retry_delay_s" default="0.4" />
+  <arg name="qr_item_topic" default="/qr_room_scan_item" />
+  <arg name="qr_control_topic" default="/qr_room_scan_control" />
+  <arg name="qr_after_item_decision_wait_s" default="0.0" />
   <arg name="qr_micro_sweep_deg" default="16.0" />
   <arg name="qr_first_wall_micro_sweep_deg" default="28.0" />
   <arg name="qr_first_wall_micro_sweep_scan_s" default="2.0" />
@@ -182,6 +188,9 @@
     <param name="image_topic" value="$(arg camera_topic)" />
     <param name="odom_topic" value="/odom" />
     <param name="target_qr_count" value="$(arg qr_target_count)" />
+    <param name="item_topic" value="$(arg qr_item_topic)" />
+    <param name="control_topic" value="$(arg qr_control_topic)" />
+    <param name="after_item_decision_wait_s" value="$(arg qr_after_item_decision_wait_s)" />
     <param name="scan_per_wall_s" value="$(arg qr_scan_per_wall_s)" />
     <param name="first_wall_scan_s" value="$(arg qr_first_wall_scan_s)" />
     <param name="settle_s" value="$(arg qr_settle_s)" />
@@ -189,6 +198,9 @@
     <param name="process_rate_hz" value="$(arg qr_process_rate_hz)" />
     <param name="angular_speed" value="$(arg qr_angular_speed)" />
     <param name="fetch_url" value="$(arg qr_fetch_url)" />
+    <param name="fetch_timeout_s" value="$(arg qr_fetch_timeout_s)" />
+    <param name="fetch_retries" value="$(arg qr_fetch_retries)" />
+    <param name="fetch_retry_delay_s" value="$(arg qr_fetch_retry_delay_s)" />
     <param name="micro_sweep_deg" value="$(arg qr_micro_sweep_deg)" />
     <param name="first_wall_micro_sweep_deg" value="$(arg qr_first_wall_micro_sweep_deg)" />
     <param name="first_wall_micro_sweep_scan_s" value="$(arg qr_first_wall_micro_sweep_scan_s)" />

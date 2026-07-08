@@ -22,4 +22,5 @@ roslaunch iden_controller global_first_graph_nav_qr_room.launch
 # 第一部分所有
 roslaunch iden_controller subtask1_real_factory.launch
 
+# 有大模型的第一部分所有
 ~/instant_ws/src/iden_controller/scripts/start_subtask1_real_factory_route.sh

@@ -68,6 +68,10 @@ class GlobalFirstNavThenQR(object):
         self.cmd_vel_topic = rospy.get_param("~cmd_vel_topic", "/cmd_vel_raw")
         self.result_topic = rospy.get_param(
             "~result_topic", "/qr_room_scan_results")
+        self.item_topic = rospy.get_param(
+            "~item_topic", "/qr_room_scan_item")
+        self.control_topic = rospy.get_param(
+            "~control_topic", "/qr_room_scan_control")
         self.wall_count = int(rospy.get_param("~wall_count", 4))
         self.target_qr_count = int(rospy.get_param("~target_qr_count", 3))
         self.scan_per_wall_s = float(rospy.get_param("~scan_per_wall_s", 2.8))
@@ -85,7 +89,10 @@ class GlobalFirstNavThenQR(object):
         self.turn_direction = 1.0 if float(rospy.get_param(
             "~turn_direction", 1.0)) >= 0.0 else -1.0
         self.fetch_url = bool(rospy.get_param("~fetch_url", True))
-        self.fetch_timeout_s = float(rospy.get_param("~fetch_timeout_s", 3.0))
+        self.fetch_timeout_s = float(rospy.get_param("~fetch_timeout_s", 6.0))
+        self.fetch_retries = max(1, int(rospy.get_param("~fetch_retries", 3)))
+        self.fetch_retry_delay_s = float(rospy.get_param(
+            "~fetch_retry_delay_s", 0.4))
         self.max_frame_width = int(rospy.get_param("~max_frame_width", 960))
         self.micro_sweep_enabled = bool(rospy.get_param(
             "~micro_sweep_enabled", True))
@@ -98,6 +105,8 @@ class GlobalFirstNavThenQR(object):
             "~first_wall_micro_sweep_scan_s", max(self.micro_sweep_scan_s, 1.8)))
         self.micro_sweep_speed = abs(float(rospy.get_param(
             "~micro_sweep_speed", 0.28)))
+        self.after_item_decision_wait_s = float(rospy.get_param(
+            "~after_item_decision_wait_s", 20.0))
 
         self.lock = threading.Lock()
         self.nav_done = self.start_immediately
@@ -109,14 +118,20 @@ class GlobalFirstNavThenQR(object):
 
         self.results = []
         self.wall_results = [None for _ in range(self.wall_count)]
+        self.valid_wall_indices = set()
+        self.stop_requested = False
+        self.control_seq = 0
+        self.last_control_command = ""
         self.scanner = ZBarScanner()
 
         self.cmd_pub = rospy.Publisher(self.cmd_vel_topic, Twist, queue_size=1)
         self.result_pub = rospy.Publisher(
             self.result_topic, String, queue_size=1, latch=True)
+        self.item_pub = rospy.Publisher(self.item_topic, String, queue_size=5)
         rospy.Subscriber(self.nav_status_topic, String, self.cb_nav_status, queue_size=5)
         rospy.Subscriber(self.image_topic, Image, self.cb_image, queue_size=1)
         rospy.Subscriber(self.odom_topic, Odometry, self.cb_odom, queue_size=1)
+        rospy.Subscriber(self.control_topic, String, self.cb_control, queue_size=5)
 
     def cb_nav_status(self, msg):
         text = msg.data or ""
@@ -140,6 +155,28 @@ class GlobalFirstNavThenQR(object):
         with self.lock:
             self.current_yaw = yaw
             self.odom_time = rospy.Time.now()
+
+    def cb_control(self, msg):
+        command = (msg.data or "").strip().lower()
+        with self.lock:
+            if command:
+                self.control_seq += 1
+                self.last_control_command = command
+            if command in ("stop", "done", "success", "matched"):
+                self.stop_requested = True
+        if command in ("stop", "done", "success", "matched"):
+            rospy.logwarn("QR_SCAN_CONTROL_STOP received; stopping further wall scan")
+            self.publish_zero()
+        if command in ("continue", "next", "no_match"):
+            rospy.loginfo("QR_SCAN_CONTROL_CONTINUE received; scanning next wall")
+
+    def should_stop_scan(self):
+        with self.lock:
+            return self.stop_requested
+
+    def get_control_seq(self):
+        with self.lock:
+            return self.control_seq
 
     def image_msg_to_gray(self, msg):
         encoding = (msg.encoding or "").lower()
@@ -294,12 +331,49 @@ class GlobalFirstNavThenQR(object):
                     "parsed": parsed,
                     "stamp": rospy.Time.now().to_sec(),
                 }
-                self.wall_results[wall_index] = result
-                self.results.append(result)
-                rospy.loginfo("wall_%d QR accepted as first physical code", wall_index)
+                valid_payload = self.store_wall_result(result)
+                if valid_payload:
+                    rospy.loginfo("wall_%d QR accepted with item payload", wall_index)
+                else:
+                    rospy.logwarn(
+                        "wall_%d QR decoded but item payload is unavailable; will retry this wall in the next scan round",
+                        wall_index)
                 self.print_wall_result(result)
                 return result
             rate.sleep()
+
+    def result_has_item_payload(self, result):
+        if not isinstance(result, dict):
+            return False
+        parsed = result.get("parsed")
+        if not isinstance(parsed, dict):
+            return False
+        data = parsed.get("json")
+        if isinstance(data, dict):
+            for key in ("result", "name", "item", "goods", "product", "货品", "物品", "名称"):
+                value = data.get(key)
+                if isinstance(value, str) and value.strip():
+                    return True
+        text = parsed.get("text")
+        if isinstance(text, str) and text.strip():
+            stripped = text.strip()
+            if not stripped.startswith(("http://", "https://")):
+                return True
+        return False
+
+    def store_wall_result(self, result):
+        wall_index = result.get("wall_index")
+        if not isinstance(wall_index, int) or wall_index < 0 or wall_index >= self.wall_count:
+            return False
+        self.wall_results[wall_index] = result
+        if not self.result_has_item_payload(result):
+            return False
+        if wall_index in self.valid_wall_indices:
+            rospy.loginfo("wall_%d valid QR already counted; ignoring duplicate", wall_index)
+            return True
+        self.valid_wall_indices.add(wall_index)
+        self.results.append(result)
+        return True
 
     def scan_wall(self, wall_index):
         self.publish_zero()
@@ -336,6 +410,31 @@ class GlobalFirstNavThenQR(object):
             rospy.logwarn("wall_%d no QR detected after micro sweep", wall_index)
         return result
 
+    def fetch_qr_url(self, url):
+        try:
+            import requests
+        except Exception as exc:
+            return None, "requests import failed: {}".format(exc)
+
+        last_error = ""
+        for attempt in range(1, self.fetch_retries + 1):
+            try:
+                rospy.loginfo("QR_URL_FETCH attempt=%d/%d timeout=%.1fs url=%s",
+                              attempt, self.fetch_retries,
+                              self.fetch_timeout_s, url)
+                response = requests.get(url, timeout=self.fetch_timeout_s)
+                response.raise_for_status()
+                rospy.loginfo("QR_URL_FETCH_OK attempt=%d/%d bytes=%d",
+                              attempt, self.fetch_retries, len(response.content))
+                return response.content.decode("utf-8", errors="replace"), None
+            except Exception as exc:
+                last_error = str(exc)
+                rospy.logwarn("QR_URL_FETCH_FAIL attempt=%d/%d error=%s",
+                              attempt, self.fetch_retries, last_error)
+                if attempt < self.fetch_retries and self.fetch_retry_delay_s > 0.0:
+                    rospy.sleep(self.fetch_retry_delay_s)
+        return None, last_error
+
     def parse_payload(self, raw):
         parsed = {
             "type": "raw",
@@ -357,11 +456,8 @@ class GlobalFirstNavThenQR(object):
             parsed["url"] = raw
             if not self.fetch_url:
                 return parsed
-            try:
-                import requests
-                response = requests.get(raw, timeout=self.fetch_timeout_s)
-                response.raise_for_status()
-                text = response.content.decode("utf-8", errors="replace")
+            text, error = self.fetch_qr_url(raw)
+            if text is not None:
                 try:
                     parsed["json"] = fix_mojibake(json.loads(text))
                     parsed["type"] = "url_json"
@@ -369,8 +465,10 @@ class GlobalFirstNavThenQR(object):
                 except Exception:
                     parsed["text"] = fix_mojibake_text(text)
                     parsed["type"] = "url_text"
-            except Exception as exc:
-                parsed["error"] = str(exc)
+            else:
+                parsed["type"] = "url_fetch_failed"
+                parsed["text"] = None
+                parsed["error"] = error
             return parsed
         return parsed
 
@@ -389,7 +487,9 @@ class GlobalFirstNavThenQR(object):
 
     def publish_summary(self):
         summary = {
-            "status": "complete" if len(self.results) >= self.target_qr_count else "partial",
+            "status": ("stopped_by_decision" if self.should_stop_scan()
+                       else "complete" if len(self.results) >= self.target_qr_count
+                       else "partial"),
             "target_qr_count": self.target_qr_count,
             "detected_count": len(self.results),
             "wall_results": self.wall_results,
@@ -401,6 +501,38 @@ class GlobalFirstNavThenQR(object):
         print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
         print("=====================================\n", flush=True)
 
+    def publish_item(self, result):
+        event = {
+            "status": "item",
+            "target_qr_count": self.target_qr_count,
+            "detected_count": len(self.results),
+            "result": result,
+            "wall_results": [result],
+        }
+        msg = String()
+        msg.data = json.dumps(event, ensure_ascii=False)
+        self.item_pub.publish(msg)
+        rospy.loginfo("QR_ITEM_PUBLISHED wall=%s detected_count=%d",
+                      result.get("wall_index"), len(self.results))
+
+    def wait_for_decision_after_item(self, start_seq=None):
+        if self.after_item_decision_wait_s <= 0.0:
+            return self.should_stop_scan()
+        if start_seq is None:
+            start_seq = self.get_control_seq()
+        deadline = rospy.Time.now() + rospy.Duration(self.after_item_decision_wait_s)
+        rate = rospy.Rate(20)
+        while not rospy.is_shutdown() and rospy.Time.now() < deadline:
+            self.publish_zero()
+            if self.should_stop_scan():
+                return True
+            with self.lock:
+                if (self.control_seq != start_seq and
+                        self.last_control_command in ("continue", "next", "no_match")):
+                    return False
+            rate.sleep()
+        return self.should_stop_scan()
+
     def run(self):
         try:
             if not self.wait_for_nav_done():
@@ -410,14 +542,42 @@ class GlobalFirstNavThenQR(object):
                 return
             self.stop_navigation_node()
             rospy.loginfo("starting QR room scan with cmd topic %s", self.cmd_vel_topic)
-            for wall in range(self.wall_count):
+            wall = 0
+            round_index = 1
+            round_start_count = len(self.results)
+            rospy.logwarn("QR_SCAN_ROUND_START round=%d valid=%d/%d",
+                          round_index, len(self.results), self.target_qr_count)
+            while not rospy.is_shutdown():
+                if self.should_stop_scan():
+                    break
                 if len(self.results) >= self.target_qr_count:
                     break
-                self.scan_wall(wall)
+                if wall in self.valid_wall_indices:
+                    rospy.loginfo("wall_%d already has a valid QR item; skipping", wall)
+                    result = None
+                else:
+                    result = self.scan_wall(wall)
+                if result is not None and self.result_has_item_payload(result):
+                    start_seq = self.get_control_seq()
+                    self.publish_item(result)
+                    if self.after_item_decision_wait_s > 0.0 and self.wait_for_decision_after_item(start_seq):
+                        break
+                if self.should_stop_scan():
+                    break
                 if len(self.results) >= self.target_qr_count:
                     break
-                if wall + 1 < self.wall_count:
-                    self.rotate_90()
+                next_wall = (wall + 1) % self.wall_count
+                if next_wall == 0 and len(self.results) == round_start_count:
+                    rospy.logwarn(
+                        "QR_SCAN_ROUND_NO_NEW_ITEMS round=%d valid=%d/%d; continuing until all QR items are collected",
+                        round_index, len(self.results), self.target_qr_count)
+                self.rotate_90()
+                wall = next_wall
+                if wall == 0:
+                    round_index += 1
+                    round_start_count = len(self.results)
+                    rospy.logwarn("QR_SCAN_ROUND_START round=%d valid=%d/%d",
+                                  round_index, len(self.results), self.target_qr_count)
             self.publish_zero()
             self.publish_summary()
         finally:

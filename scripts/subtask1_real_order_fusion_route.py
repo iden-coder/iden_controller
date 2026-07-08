@@ -130,6 +130,9 @@ class Subtask1RealOrderFusion(object):
 
         self.voice_topic = rospy.get_param("~voice_topic", "/factory/voice_raw_text")
         self.qr_summary_topic = rospy.get_param("~qr_summary_topic", "/qr_room_scan_results")
+        self.qr_item_topic = rospy.get_param("~qr_item_topic", "/qr_room_scan_item")
+        self.qr_scan_control_topic = rospy.get_param(
+            "~qr_scan_control_topic", "/qr_room_scan_control")
         self.tts_topic = rospy.get_param("~tts_topic", "/factory/tts_text")
         self.result_topic = rospy.get_param("~result_topic", "/factory/subtask1_result")
         self.compat_target_topic = rospy.get_param(
@@ -137,6 +140,8 @@ class Subtask1RealOrderFusion(object):
         self.state_topic = rospy.get_param("~state_topic", "/factory/task_state")
 
         self.required_item_count = int(rospy.get_param("~required_item_count", 3))
+        self.streaming_qr_decision = as_bool(rospy.get_param(
+            "~streaming_qr_decision", True))
         self.auto_start_nav = as_bool(rospy.get_param("~auto_start_nav", False))
         self.require_wake_before_order = as_bool(rospy.get_param(
             "~require_wake_before_order", True))
@@ -191,6 +196,9 @@ class Subtask1RealOrderFusion(object):
         self.post_route_process = None
         self.nav_started = False
         self.decision_done = False
+        self.stream_decision_in_progress = False
+        self.qr_scan_finished = False
+        self.processed_qr_keys = set()
         self.post_route_started = False
         self.awakened = False
         self.last_reject_prompt_time = 0.0
@@ -203,9 +211,12 @@ class Subtask1RealOrderFusion(object):
             self.compat_target_topic, String, queue_size=10, latch=True)
         self.state_pub = rospy.Publisher(
             self.state_topic, Int32, queue_size=10, latch=True)
+        self.qr_control_pub = rospy.Publisher(
+            self.qr_scan_control_topic, String, queue_size=5)
 
         rospy.Subscriber(self.voice_topic, String, self.voice_callback, queue_size=5)
         rospy.Subscriber(self.qr_summary_topic, String, self.qr_summary_callback, queue_size=3)
+        rospy.Subscriber(self.qr_item_topic, String, self.qr_item_callback, queue_size=10)
         rospy.Subscriber(
             self.post_route_status_topic, String, self.nav_status_callback, queue_size=10)
 
@@ -341,12 +352,82 @@ class Subtask1RealOrderFusion(object):
             return
         items = self.extract_items_from_summary(summary)
         evidence = self.build_qr_evidence(summary)
+        status = normalize_text(summary.get("status")).lower()
         with self.lock:
+            if self.decision_done:
+                return
             self.qr_summary = summary
+            self.qr_scan_finished = status in (
+                "complete", "partial", "stopped_by_decision", "done", "finished")
             self.qr_items = items
             self.qr_evidence = evidence
         rospy.loginfo("QR summary accepted: %s", items)
         self.try_decide()
+
+    def qr_item_callback(self, msg):
+        if not self.streaming_qr_decision:
+            return
+        event = first_json_object(msg.data)
+        if not isinstance(event, dict):
+            rospy.logwarn("invalid QR item ignored: %s", msg.data[:120])
+            return
+        result = self.extract_result_from_item_event(event)
+        if not isinstance(result, dict):
+            rospy.logwarn("QR item event has no result: %s", msg.data[:160])
+            return
+        items = self.extract_items_from_wall_result(result)
+        evidence = self.build_qr_evidence({"wall_results": [result]})
+        key = self.qr_result_key(result)
+        with self.lock:
+            if self.decision_done:
+                return
+            if key in self.processed_qr_keys:
+                return
+            self.processed_qr_keys.add(key)
+            self.merge_qr_observation_locked(items, evidence)
+            voice_text = self.voice_text
+            category = self.target_category
+            if self.stream_decision_in_progress:
+                rospy.loginfo("STREAM_QR_ITEM_QUEUED items=%s", items)
+                return
+            self.stream_decision_in_progress = True
+        rospy.loginfo("STREAM_QR_ITEM wall=%s items=%s", result.get("wall_index"), items)
+        self.publish_state(STATE_REASONING)
+        threading.Thread(
+            target=self.stream_decide_thread,
+            args=(voice_text, category, items, evidence),
+            daemon=True).start()
+
+    def extract_result_from_item_event(self, event):
+        for key in ("result", "wall_result", "qr", "item"):
+            value = event.get(key)
+            if isinstance(value, dict):
+                return value
+        if "parsed" in event or "raw" in event:
+            return event
+        return None
+
+    def qr_result_key(self, result):
+        raw = normalize_text(result.get("raw"))
+        wall = result.get("wall_index")
+        parsed = result.get("parsed")
+        parsed_text = json.dumps(parsed, ensure_ascii=False, sort_keys=True) if isinstance(parsed, dict) else ""
+        return "{}|{}|{}".format(wall, raw, parsed_text)
+
+    def merge_qr_observation_locked(self, items, evidence):
+        for item in items:
+            if item and item not in self.qr_items:
+                self.qr_items.append(item)
+        for entry in evidence:
+            key = json.dumps(entry, ensure_ascii=False, sort_keys=True)
+            exists = False
+            for old in self.qr_evidence:
+                old_key = json.dumps(old, ensure_ascii=False, sort_keys=True)
+                if old_key == key:
+                    exists = True
+                    break
+            if not exists:
+                self.qr_evidence.append(entry)
 
     def extract_items_from_summary(self, summary):
         items = []
@@ -442,6 +523,23 @@ class Subtask1RealOrderFusion(object):
             return ""
         return item
 
+    def category_hint_from_qr_result(self, result):
+        if not isinstance(result, dict):
+            return ""
+        texts = [normalize_text(result.get("raw"))]
+        parsed = result.get("parsed")
+        if isinstance(parsed, dict):
+            texts.append(normalize_text(parsed.get("url")))
+            texts.append(normalize_text(parsed.get("type")))
+        text = " ".join(part for part in texts if part).lower()
+        if "qrcode/food" in text or "/food" in text:
+            return "食品加工类"
+        if "qrcode/daily" in text or "/daily" in text:
+            return "日用品类"
+        if "qrcode/electronic" in text or "/electronic" in text or "/electronics" in text:
+            return "电子产品类"
+        return ""
+
     def build_qr_evidence(self, summary):
         evidence = []
         for result in self.iter_qr_results(summary):
@@ -449,6 +547,7 @@ class Subtask1RealOrderFusion(object):
             entry = {
                 "wall_index": result.get("wall_index"),
                 "raw": normalize_text(result.get("raw")),
+                "category_hint": self.category_hint_from_qr_result(result),
                 "parsed_type": normalize_text(parsed.get("type")),
                 "url": normalize_text(parsed.get("url")),
                 "json": fix_mojibake(parsed.get("json")),
@@ -467,11 +566,24 @@ class Subtask1RealOrderFusion(object):
             category = self.target_category
             items = list(self.qr_items)
             evidence = list(self.qr_evidence)
+            scan_finished = self.qr_scan_finished
+            stream_busy = self.stream_decision_in_progress
         if not voice_text:
+            return
+        if stream_busy:
+            rospy.loginfo_throttle(
+                5.0, "waiting active single-QR Spark decision before final decision")
             return
         if len(items) < self.required_item_count:
             rospy.loginfo_throttle(
-                5.0, "waiting QR items: %d/%d", len(items), self.required_item_count)
+                5.0,
+                "waiting QR items: %d/%d; Spark decision is disabled until all required QR items are collected",
+                len(items), self.required_item_count)
+            if scan_finished:
+                rospy.logwarn_throttle(
+                    5.0,
+                    "QR summary was partial; waiting for scanner to keep rotating until %d valid QR items",
+                    self.required_item_count)
             return
 
         with self.lock:
@@ -481,6 +593,54 @@ class Subtask1RealOrderFusion(object):
         self.publish_state(STATE_REASONING)
         threading.Thread(target=self.decide_thread, args=(voice_text, category, items, evidence),
                          daemon=True).start()
+
+    def stream_decide_thread(self, voice_text, category, items, evidence=None):
+        evidence = evidence or []
+        try:
+            if not voice_text:
+                rospy.logwarn("STREAM_QR_WAITING_VOICE items=%s", items)
+                self.qr_control_pub.publish(String(data="continue"))
+                return
+            if not items:
+                rospy.logwarn("STREAM_QR_EMPTY_ITEM ignored")
+                self.qr_control_pub.publish(String(data="continue"))
+                return
+            if not category:
+                category = self.extract_target_category(voice_text)
+            if not category:
+                category = self.infer_category_with_spark_or_local(voice_text, items)
+            if not category:
+                rospy.logwarn("STREAM_QR_NO_TARGET_CATEGORY voice=%s", voice_text)
+                self.qr_control_pub.publish(String(data="continue"))
+                return
+            if self.require_spark_decision and not self.spark_ready():
+                self.publish_error("星火大模型未配置，不能进行货品筛选")
+                return
+
+            rospy.loginfo("STREAM_QR_SPARK_CHECK category=%s items=%s", category, items)
+            selected_item = self.select_item_with_spark(category, items, evidence)
+            if not selected_item:
+                rospy.loginfo("STREAM_QR_NO_MATCH category=%s items=%s; continue scanning",
+                              category, items)
+                self.qr_control_pub.publish(String(data="continue"))
+                self.publish_state(STATE_NAV_AND_SCAN)
+                return
+
+            with self.lock:
+                if self.decision_done:
+                    return
+                self.decision_done = True
+                all_items = list(self.qr_items)
+            rospy.logwarn("STREAM_QR_MATCH_STOP selected_item=%s; stopping QR scan",
+                          selected_item)
+            self.qr_control_pub.publish(String(data="stop"))
+            self.finish_success(voice_text, category, selected_item, all_items)
+        finally:
+            with self.lock:
+                self.stream_decision_in_progress = False
+                should_try_final = self.qr_scan_finished and not self.decision_done
+            if should_try_final:
+                self.try_decide()
 
     def decide_thread(self, voice_text, category, items, evidence=None):
         evidence = evidence or []
@@ -497,10 +657,41 @@ class Subtask1RealOrderFusion(object):
             return
 
         selected_item = self.select_item_with_spark(category, items, evidence)
+        if selected_item:
+            self.finish_success(voice_text, category, selected_item, items)
+            return
         if not selected_item:
             self.publish_error("星火大模型未能从二维码中选出目标货品")
             return
 
+        warehouse = WAREHOUSE_BY_CATEGORY.get(category, "未知车间")
+        text = "取得{}属于{}应放置在{}。".format(selected_item, category, warehouse)
+        payload = {
+            "status": "success",
+            "voice_text": voice_text,
+            "target_category": category,
+            "selected_item": selected_item,
+            "target_warehouse": warehouse,
+            "scanned_items": items,
+            "broadcast_text": text,
+            "sim_task_ignored": True,
+            "stamp": time.time(),
+        }
+        rospy.loginfo("subtask1 decision: %s", json.dumps(payload, ensure_ascii=False))
+        self.result_pub.publish(String(data=json.dumps(payload, ensure_ascii=False)))
+        self.compat_pub.publish(String(data=json.dumps({
+            "real_item": selected_item,
+            "real_category": category,
+            "real_warehouse": warehouse,
+            "sim_ignored": True,
+        }, ensure_ascii=False)))
+        self.speak(text)
+        if self.post_route_enabled:
+            self.start_post_route_after_tts()
+        else:
+            self.publish_state(STATE_DONE)
+
+    def finish_success(self, voice_text, category, selected_item, items):
         warehouse = WAREHOUSE_BY_CATEGORY.get(category, "未知车间")
         text = "取得{}属于{}应放置在{}。".format(selected_item, category, warehouse)
         payload = {
@@ -636,7 +827,16 @@ class Subtask1RealOrderFusion(object):
             "target_category": category,
             "candidate_items": candidates,
             "qr_evidence": evidence,
+            "allow_no_match": True,
+            "no_match_output": {
+                "selected_item": "",
+                "reason": "no candidate belongs to target_category",
+            },
             "rules": [
+                "CRITICAL: choose selected_item only if it clearly belongs to target_category; otherwise selected_item must be empty.",
+                "QR category_hint or URL path is authoritative: /food means 食品加工类, /daily means 日用品类, /electronic means 电子产品类.",
+                "If category_hint conflicts with target_category, return {\"selected_item\":\"\",\"reason\":\"category mismatch\"}.",
+                "日用品类 means non-electronic daily household, textile, or cleaning goods. Computer peripherals, electronic devices, and electronic components belong to 电子产品类.",
                 "只处理现实环境任务，忽略仿真环境。",
                 "必须根据目标大类从二维码候选货品中选择一个。",
                 "优先从 candidate_items 中选择；如果 candidate_items 是乱码或不完整，可以参考 qr_evidence 中的 raw/json/text/url。",
@@ -653,11 +853,19 @@ class Subtask1RealOrderFusion(object):
             "从二维码候选货品中选择属于目标大类的唯一货品。"
             "输出必须是严格JSON，格式为 {\"selected_item\":\"货品名称\",\"reason\":\"简短理由\"}。\n"
             + json.dumps(prompt_payload, ensure_ascii=False)
+            + "\nIf no candidate item belongs to target_category, return exactly "
+              "{\"selected_item\":\"\",\"reason\":\"no match\"}."
         )
         for attempt in range(2):
             data = self.call_spark(prompt, max_tokens=180)
             content = self.extract_spark_content(data)
             selected = self.parse_selected_item_from_spark(content, candidates)
+            if selected and self.selected_item_conflicts_with_evidence(
+                    category, selected, evidence):
+                rospy.logwarn(
+                    "SPARK_DECISION_REJECTED_BY_QR_CATEGORY selected_item=%s category=%s raw_content=%s",
+                    selected, category, content[:200])
+                selected = ""
             if selected:
                 rospy.loginfo("SPARK_DECISION_OK selected_item=%s raw_content=%s",
                               selected, content[:200])
@@ -667,6 +875,47 @@ class Subtask1RealOrderFusion(object):
             prompt += "\n上一次返回无法解析。请只返回JSON，例如：{\"selected_item\":\"香蕉\",\"reason\":\"属于食品加工类\"}。"
         return ""
 
+    def selected_item_conflicts_with_evidence(self, category, selected_item, evidence):
+        category = self.normalize_category(category)
+        selected_item = self.clean_candidate_item(selected_item)
+        if not category or not selected_item:
+            return False
+        hints = []
+        for entry in evidence or []:
+            if not isinstance(entry, dict):
+                continue
+            candidate_items = entry.get("candidate_items") or []
+            matched_item = False
+            for item in candidate_items:
+                item = self.clean_candidate_item(item)
+                if item and (selected_item == item or selected_item in item or item in selected_item):
+                    matched_item = True
+                    break
+            if not matched_item:
+                continue
+            hint = self.normalize_category(entry.get("category_hint"))
+            if hint:
+                hints.append(hint)
+        return bool(hints and category not in hints)
+
+    def spark_response_says_no_match(self, content, obj=None):
+        text = normalize_text(content).lower()
+        markers = (
+            "no match", "no candidate", "none", "category mismatch",
+            "not belong", "does not belong", "不属于", "不匹配",
+            "没有符合", "无匹配", "无法匹配", "不是目标", "类别不符",
+        )
+        if any(marker in text for marker in markers):
+            return True
+        if isinstance(obj, dict):
+            for key in ("match", "matched", "is_match"):
+                value = obj.get(key)
+                if value is False:
+                    return True
+                if isinstance(value, str) and value.strip().lower() in ("false", "no", "0"):
+                    return True
+        return False
+
     def parse_selected_item_from_spark(self, content, candidates):
         content = normalize_text(content)
         if not content:
@@ -674,7 +923,11 @@ class Subtask1RealOrderFusion(object):
         obj = first_json_object(content)
         values = []
         if isinstance(obj, dict):
+            explicit_selection_key_seen = False
             for key in ("selected_item", "item", "name", "goods", "product", "货品", "物品", "result"):
+                if key not in obj:
+                    continue
+                explicit_selection_key_seen = True
                 value = normalize_text(obj.get(key))
                 if value:
                     values.append(value)
@@ -685,7 +938,14 @@ class Subtask1RealOrderFusion(object):
                 idx = int(index_value)
                 if 0 <= idx < len(candidates):
                     values.append(candidates[idx])
-        values.append(content)
+            if self.spark_response_says_no_match(content, obj):
+                return ""
+            if explicit_selection_key_seen and not values:
+                return ""
+        elif self.spark_response_says_no_match(content):
+            return ""
+        else:
+            values.append(content)
         for value in values:
             value = self.clean_candidate_item(value)
             if not value:
@@ -696,6 +956,8 @@ class Subtask1RealOrderFusion(object):
             for item in candidates:
                 if value in item or item in value:
                     return item
+        if isinstance(obj, dict):
+            return ""
         for item in candidates:
             if item and item in content:
                 return item
