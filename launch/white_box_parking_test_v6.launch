@@ -1,0 +1,9 @@
+<launch>
+  <include file="$(find iden_controller)/launch/white_box_parking_test_v5.launch" />
+
+  <!-- Laser is about 6.1 cm behind the front edge: 14.1 cm scan range
+       leaves approximately 8 cm between the chassis nose and the wall. -->
+  <param name="/white_box_parking_test_v5/wall_final_distance_m"
+         value="0.141" />
+</launch>
+

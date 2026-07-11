@@ -1,0 +1,77 @@
+<launch>
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="start_delay_s" default="3.0" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node if="$(arg start_camera)"
+        name="ucar_camera" pkg="ucar_camera" type="ucar_camera.py"
+        output="screen" respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="$(arg camera_topic)" />
+    <param name="device_path" value="$(arg camera_device)" />
+    <param name="image_width" value="1280" />
+    <param name="image_height" value="720" />
+    <param name="rate" value="15" />
+  </node>
+
+  <node pkg="iden_controller" type="global_first_safety_monitor_parking_v5.py"
+        name="global_first_safety_monitor" output="screen" required="true">
+    <param name="cmd_vel_in_topic" value="/cmd_vel_raw" />
+    <param name="cmd_vel_out_topic" value="/cmd_vel" />
+    <param name="scan_topic" value="/scan" />
+    <param name="enabled" value="true" />
+    <param name="swap_left_right" value="false" />
+    <param name="front_stop_m" value="0.24" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_slow_m" value="0.35" />
+    <param name="side_stop_m" value="0.16" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_avoid_m" value="0.18" />
+    <param name="side_slow_m" value="0.23" />
+    <param name="rear_stop_m" value="0.24" />
+    <param name="front_angle_deg" value="34.0" />
+    <param name="side_angle_min_deg" value="35.0" />
+    <param name="side_angle_max_deg" value="76.0" />
+    <param name="rear_angle_deg" value="35.0" />
+    <param name="min_turn_wz" value="0.16" />
+    <param name="max_turn_wz" value="0.36" />
+    <param name="clear_slow_ratio" value="0.92" />
+    <param name="allow_reverse" value="false" />
+    <param name="escape_enabled" value="true" />
+    <param name="escape_back_speed" value="0.07" />
+    <param name="escape_back_time_s" value="0.6" />
+    <param name="escape_cooldown_s" value="2.5" />
+    <param name="escape_rear_clear_m" value="0.34" />
+    <param name="escape_front_release_m" value="0.34" />
+    <param name="escape_turn_wz" value="0.06" />
+    <param name="scan_timeout" value="0.7" />
+    <param name="parking_mode_topic" value="/factory/parking_close_mode" />
+    <param name="parking_mode_timeout_s" value="0.8" />
+    <param name="parking_front_stop_m" value="0.095" />
+    <param name="parking_front_critical_m" value="0.075" />
+    <param name="parking_front_slow_m" value="0.20" />
+    <param name="parking_max_lateral_speed" value="0.08" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_white_box_parking_test_v1.py"
+        name="white_box_parking_test" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_mission_parking_v5.yaml"
+              command="load" />
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="scan_topic" value="/scan" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="parking_close_mode_topic" value="/factory/parking_close_mode" />
+    <param name="start_delay_s" value="$(arg start_delay_s)" />
+    <param name="input_timeout_s" value="20.0" />
+    <param name="acquire_timeout_s" value="18.0" />
+  </node>
+</launch>
+

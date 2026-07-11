@@ -1,0 +1,21 @@
+shutdown_costmaps: false
+controller_frequency: 10.0
+controller_patience: 4.0
+planner_frequency: 1.0
+planner_patience: 5.0
+oscillation_timeout: 7.0
+oscillation_distance: 0.15
+recovery_behavior_enabled: true
+clearing_rotation_allowed: false
+conservative_reset_dist: 1.2
+
+# Navfn uses Dijkstra propagation and avoids the GlobalPlanner grid-path
+# traceback failure seen when a legal potential exists at the d1 handoff.
+base_global_planner: "navfn/NavfnROS"
+base_local_planner: "dwa_local_planner/DWAPlannerROS"
+
+NavfnROS:
+  allow_unknown: true
+  default_tolerance: 0.18
+  visualize_potential: false
+

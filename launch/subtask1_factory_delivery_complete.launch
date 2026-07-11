@@ -1,0 +1,100 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="spark_api_key" default="$(optenv SPARK_API_KEY)" />
+  <arg name="spark_api_secret" default="$(optenv SPARK_API_SECRET)" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <!-- Existing, already-tested voice -> first navigation -> QR -> Spark flow. -->
+  <include file="$(find iden_controller)/launch/subtask1_real_factory_route_unique.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+    <arg name="spark_api_key" value="$(arg spark_api_key)" />
+    <arg name="spark_api_secret" value="$(arg spark_api_secret)" />
+    <arg name="start_base" value="$(arg start_base)" />
+    <arg name="start_lidar" value="$(arg start_lidar)" />
+    <arg name="start_camera" value="$(arg start_camera)" />
+    <arg name="start_map" value="$(arg start_map)" />
+    <arg name="start_amcl" value="$(arg start_amcl)" />
+    <!-- The v4 monitor below preserves these normal thresholds and only
+         relaxes front clearance while receiving a parking heartbeat. -->
+    <arg name="start_safety_monitor" value="false" />
+  </include>
+
+  <node if="$(arg start_safety_monitor)"
+        pkg="iden_controller" type="global_first_safety_monitor_parking_v5.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <param name="cmd_vel_in_topic" value="/cmd_vel_raw" />
+    <param name="cmd_vel_out_topic" value="/cmd_vel" />
+    <param name="scan_topic" value="/scan" />
+    <param name="enabled" value="true" />
+    <param name="swap_left_right" value="false" />
+    <param name="front_stop_m" value="0.24" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_slow_m" value="0.35" />
+    <param name="side_stop_m" value="0.16" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_avoid_m" value="0.18" />
+    <param name="side_slow_m" value="0.23" />
+    <param name="rear_stop_m" value="0.24" />
+    <param name="front_angle_deg" value="34.0" />
+    <param name="side_angle_min_deg" value="35.0" />
+    <param name="side_angle_max_deg" value="76.0" />
+    <param name="rear_angle_deg" value="35.0" />
+    <param name="min_turn_wz" value="0.16" />
+    <param name="max_turn_wz" value="0.36" />
+    <param name="clear_slow_ratio" value="0.92" />
+    <param name="allow_reverse" value="false" />
+    <param name="escape_enabled" value="true" />
+    <param name="escape_back_speed" value="0.07" />
+    <param name="escape_back_time_s" value="0.6" />
+    <param name="escape_cooldown_s" value="2.5" />
+    <param name="escape_rear_clear_m" value="0.34" />
+    <param name="escape_front_release_m" value="0.34" />
+    <param name="escape_turn_wz" value="0.06" />
+    <param name="scan_timeout" value="0.7" />
+    <param name="parking_mode_topic" value="/factory/parking_close_mode" />
+    <param name="parking_mode_timeout_s" value="0.8" />
+    <param name="parking_front_stop_m" value="0.095" />
+    <param name="parking_front_critical_m" value="0.075" />
+    <param name="parking_front_slow_m" value="0.20" />
+    <param name="parking_max_lateral_speed" value="0.08" />
+  </node>
+
+  <include file="$(find iden_controller)/launch/factory_room_global_first_bridge.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+  </include>
+
+  <node pkg="iden_controller" type="run_factory_room_ocr_ros.sh"
+        name="factory_room_ocr" output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="4.0" />
+    <param name="vote_window" value="10" />
+    <param name="vote_need" value="5" />
+    <param name="enabled_on_start" value="false" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_delivery_manager_parking_v5.py"
+        name="factory_room_delivery_manager" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_mission_parking_v5.yaml"
+              command="load" />
+    <param name="task_result_topic" value="/factory/subtask1_result" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="scan_topic" value="/scan" />
+    <param name="pose_topic" value="/amcl_pose" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="parking_close_mode_topic" value="/factory/parking_close_mode" />
+    <param name="move_base_action" value="/factory_room/move_base" />
+    <param name="clear_costmaps_service"
+           value="/factory_room/move_base/clear_costmaps" />
+  </node>
+</launch>

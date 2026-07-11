@@ -1,0 +1,20 @@
+<launch>
+  <!-- Room-only Navfn variant for the direct QR-room-to-d1 handoff. -->
+  <node pkg="move_base" type="move_base" ns="factory_room"
+        name="move_base" output="screen" respawn="false">
+    <rosparam file="$(find iden_controller)/config/factory_room_move_base_params_navfn_d1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_dwa.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_costmap_common.yaml"
+              command="load" ns="global_costmap" />
+    <rosparam file="$(find iden_controller)/config/factory_room_costmap_common.yaml"
+              command="load" ns="local_costmap" />
+    <rosparam file="$(find iden_controller)/config/factory_room_global_costmap.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_local_costmap.yaml"
+              command="load" />
+    <remap from="cmd_vel" to="/cmd_vel_raw" />
+  </node>
+</launch>
+

@@ -23,4 +23,13 @@ if [[ -z "${SPARK_API_KEY:-}" || -z "${SPARK_API_SECRET:-}" ]]; then
   exit 1
 fi
 
-exec roslaunch iden_controller subtask1_real_factory_route.launch "$@"
+FILTER_PATTERN='check crc16 faild|header_crc8 error|check frame end|head_len error'
+
+if [[ "${SHOW_SERIAL_WARNINGS:-0}" == "1" ]]; then
+  exec roslaunch iden_controller subtask1_real_factory_route.launch "$@"
+fi
+
+set +e
+roslaunch iden_controller subtask1_real_factory_route.launch "$@" 2>&1 \
+  | grep --line-buffered -v -E "$FILTER_PATTERN"
+exit "${PIPESTATUS[0]}"

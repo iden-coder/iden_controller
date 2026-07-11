@@ -65,7 +65,7 @@
   <arg name="qr_first_wall_micro_sweep_scan_s" default="2.0" />
 
   <include if="$(arg start_base)"
-           file="$(find iden_controller)/launch/my_base_driver_iden.launch" />
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
   <include if="$(arg start_lidar)"
            file="$(find ydlidar)/launch/ydlidar.launch" />
 

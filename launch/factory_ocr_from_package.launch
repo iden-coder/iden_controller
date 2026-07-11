@@ -1,0 +1,8 @@
+<launch>
+  <node
+    pkg="iden_controller"
+    type="run_factory_ocr_from_package.sh"
+    name="factory_ocr_from_package"
+    output="screen"
+    required="true" />
+</launch>
