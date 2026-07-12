@@ -1,0 +1,21 @@
+# Overrides loaded after V2 and V3.
+# At 800 px width this accepts a 3.25% horizontal error, while the 48 px lock
+# band prevents the secondary white-frame detector from reversing a good sign
+# alignment.
+sign_center_tolerance_px: 26.0
+sign_stable_frames: 3
+frame_disable_near_sign_px: 48.0
+frame_assist_weight: 0.18
+lateral_min_speed: 0.014
+lateral_timeout_s: 18.0
+
+# 2.8 degrees is visibly controlled without wasting time chasing lidar noise.
+# V3's effective minimum angular speed still corrects larger deviations.
+heading_tolerance_deg: 2.8
+heading_stable_frames: 3
+heading_timeout_s: 14.0
+heading_min_wz: 0.115
+heading_stuck_wz: 0.155
+lateral_realign_deg: 7.0
+lateral_recovery_tolerance_deg: 3.5
+

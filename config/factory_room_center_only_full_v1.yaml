@@ -1,0 +1,54 @@
+# Full-task centerline parking. Navigation/search parameters come from the
+# existing factory_room_mission_parking_v7.yaml loaded first.
+center_robot_half_length_m: 0.171
+center_robot_half_width_m: 0.128
+center_laser_offset_x_m: -0.11
+center_swept_front_margin_m: 0.10
+center_swept_rear_margin_m: 0.08
+
+# Wide wall acquisition handles a navigation arrival that is not perpendicular.
+center_wall_sector_deg: 68.0
+center_wall_min_range_m: 0.10
+center_wall_max_range_m: 2.00
+center_wall_inlier_m: 0.025
+center_wall_min_inliers: 18
+center_wall_min_span_m: 0.28
+center_wall_heading_abort_deg: 45.0
+
+center_heading_tolerance_deg: 2.8
+center_lateral_realign_deg: 7.0
+center_approach_heading_limit_deg: 4.5
+center_heading_kp: 1.35
+center_heading_min_wz: 0.115
+center_heading_stuck_wz: 0.155
+center_heading_max_wz: 0.22
+center_heading_timeout_s: 16.0
+center_heading_stable_frames: 3
+
+center_sign_tolerance_px: 20.0
+center_sign_stable_frames: 3
+center_sign_ema_alpha: 0.35
+center_optical_x_ratio: 0.5
+center_lateral_command_sign: -1.0
+center_lateral_kp: 0.28
+center_lateral_min_speed: 0.025
+center_lateral_near_min_speed: 0.010
+center_lateral_near_band_px: 44.0
+center_lateral_max_speed: 0.090
+center_lateral_limit_m: 0.45
+center_lateral_timeout_s: 20.0
+center_lateral_hard_clearance_m: 0.10
+center_lateral_slow_clearance_m: 0.34
+center_obstacle_wait_timeout_s: 3.0
+
+# 14.7 cm laser-wall target minus 6.1 cm laser-to-nose offset = 8.6 cm.
+center_final_wall_distance_m: 0.147
+center_final_wall_tolerance_m: 0.006
+center_final_fail_tolerance_m: 0.018
+center_front_emergency_m: 0.105
+center_approach_fast_speed: 0.100
+center_approach_slow_speed: 0.024
+center_approach_slow_error_m: 0.15
+center_approach_max_travel_m: 0.95
+center_approach_timeout_s: 28.0
+center_final_stable_frames: 6

@@ -1,0 +1,13 @@
+# Overrides applied after the complete V2 parameter file.
+heading_min_wz: 0.125
+heading_stuck_wz: 0.165
+heading_progress_deg: 0.35
+heading_stuck_after_s: 1.6
+heading_timeout_s: 18.0
+heading_stable_frames: 4
+
+# Lateral motion may continue until wall error exceeds 5.5 degrees. The final
+# pre-approach heading alignment still uses V2's strict 1.8 degree tolerance.
+lateral_realign_deg: 5.5
+lateral_recovery_tolerance_deg: 2.75
+

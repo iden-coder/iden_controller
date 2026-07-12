@@ -1,0 +1,46 @@
+# Standalone workshop-sign parking test. New file; legacy parking is untouched.
+target_label: ""
+start_delay_s: 5.0
+input_wait_timeout_s: 45.0
+sensor_timeout_s: 1.0
+
+wall_sector_deg: 42.0
+wall_min_range_m: 0.10
+wall_max_range_m: 1.60
+wall_inlier_m: 0.025
+wall_min_inliers: 18
+wall_min_span_m: 0.28
+
+heading_tolerance_deg: 1.8
+heading_abort_deg: 18.0
+heading_kp: 1.35
+heading_max_wz: 0.18
+heading_stable_frames: 6
+heading_timeout_s: 12.0
+cardinal_warn_deg: 8.0
+
+image_mirrored: true
+lateral_command_sign: -1.0
+optical_center_x_ratio: 0.5
+sign_center_tolerance_px: 14.0
+sign_stable_frames: 5
+ocr_ema_alpha: 0.35
+lateral_kp: 0.16
+lateral_min_speed: 0.018
+lateral_max_speed: 0.055
+lateral_limit_m: 0.45
+lateral_timeout_s: 20.0
+side_hard_clearance_m: 0.15
+
+# The laser is approximately 6.1 cm behind the chassis nose.
+# A 17.1 cm laser-wall distance leaves about 11 cm at the nose.
+final_wall_distance_m: 0.171
+final_wall_tolerance_m: 0.008
+final_fail_tolerance_m: 0.025
+front_emergency_m: 0.105
+approach_fast_speed: 0.085
+approach_slow_speed: 0.025
+approach_slow_error_m: 0.18
+approach_max_travel_m: 0.90
+approach_timeout_s: 24.0
+final_stable_frames: 6

@@ -1,0 +1,30 @@
+omni_local_enabled: true
+omni_horizon_s: 1.10
+omni_sim_dt_s: 0.11
+omni_scan_range_m: 1.35
+omni_scan_stride: 3
+
+omni_max_forward_mps: 0.27
+omni_max_lateral_mps: 0.16
+omni_max_angular_rps: 0.34
+omni_min_translation_mps: 0.075
+omni_lateral_accel_mps2: 0.42
+
+# Static map-matching lets the planner tolerate walls while keeping more room
+# around scan clusters that are not explained by the map, normally cones.
+omni_static_match_radius_m: 0.11
+omni_wall_hard_clearance_m: 0.18
+omni_wall_preferred_clearance_m: 0.23
+omni_dynamic_hard_clearance_m: 0.22
+omni_dynamic_preferred_clearance_m: 0.32
+omni_static_map_hard_clearance_m: 0.18
+
+omni_block_replan_s: 1.40
+omni_replan_min_interval_s: 1.20
+omni_score_path_weight: 4.2
+omni_score_goal_weight: 3.0
+omni_score_dynamic_weight: 2.8
+omni_score_wall_weight: 0.75
+omni_score_lateral_weight: 0.25
+omni_score_turn_weight: 0.18
+omni_score_side_switch_weight: 0.32

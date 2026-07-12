@@ -1,0 +1,63 @@
+<launch>
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+  <arg name="start_ocr" default="true" />
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="target_label" default="" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node if="$(arg start_camera)" name="ucar_camera" pkg="ucar_camera"
+        type="ucar_camera.py" output="screen" respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="$(arg camera_topic)" />
+    <param name="device_path" value="$(arg camera_device)" />
+    <param name="image_width" value="800" />
+    <param name="image_height" value="600" />
+    <param name="rate" value="15" />
+  </node>
+
+  <node if="$(arg start_safety_monitor)" pkg="iden_controller"
+        type="global_first_safety_monitor_parking_v8.py"
+        name="global_first_safety_monitor" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="parking_lateral_travel_limit_m" value="0.48" />
+    <param name="parking_max_lateral_speed" value="0.10" />
+  </node>
+
+  <node if="$(arg start_ocr)" pkg="iden_controller"
+        type="run_factory_room_ocr_ros.sh" name="factory_room_ocr"
+        output="screen" required="true">
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="4.0" />
+    <param name="vote_window" value="8" />
+    <param name="vote_need" value="4" />
+    <param name="enabled_on_start" value="true" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_sign_center_only_parking_test_v1.py"
+        name="factory_sign_center_only_parking_test_v2" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_sign_center_only_parking_test_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_sign_center_only_parking_test_v2.yaml"
+              command="load" />
+    <param name="target_label" value="$(arg target_label)" />
+    <param name="ocr_topic" value="/factory_room/ocr_result" />
+    <param name="scan_topic" value="/scan" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="parking_mode_topic" value="/factory/parking_close_mode" />
+  </node>
+</launch>
+

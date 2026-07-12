@@ -1,0 +1,29 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="spark_api_key" default="$(optenv SPARK_API_KEY)" />
+  <arg name="spark_api_secret" default="$(optenv SPARK_API_SECRET)" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <include file="$(find iden_controller)/launch/subtask1_real_factory_route_unique.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+    <arg name="spark_api_key" value="$(arg spark_api_key)" />
+    <arg name="spark_api_secret" value="$(arg spark_api_secret)" />
+    <arg name="start_base" value="$(arg start_base)" />
+    <arg name="start_lidar" value="$(arg start_lidar)" />
+    <arg name="start_camera" value="$(arg start_camera)" />
+    <arg name="start_map" value="$(arg start_map)" />
+    <arg name="start_amcl" value="$(arg start_amcl)" />
+    <arg name="start_safety_monitor" value="false" />
+  </include>
+
+  <include file="$(find iden_controller)/launch/factory_room_delivery_runtime_center_only_v1.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+    <arg name="start_safety_monitor" value="$(arg start_safety_monitor)" />
+  </include>
+</launch>
+

@@ -1,0 +1,214 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="config_yaml" default="$(find iden_controller)/config/global_first_graph_nav_2249fcf.yaml" />
+  <arg name="goal_x" default="-1.50" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="waypoint_enabled" default="true" />
+  <arg name="waypoint_x" default="-0.33" />
+  <arg name="waypoint_y" default="-1.02" />
+  <arg name="initial_pose_x" default="0.0" />
+  <arg name="initial_pose_y" default="0.0" />
+  <arg name="initial_pose_yaw" default="0.0" />
+
+  <!-- Combo-only navigation overrides: keep old files intact, but make this
+       end-to-end task replan earlier and finish more accurately. -->
+  <arg name="nav_goal_tolerance_m" default="0.07" />
+  <arg name="nav_goal_yaw_tolerance_deg" default="7.0" />
+  <arg name="nav_goal_hold_s" default="1.0" />
+  <arg name="nav_stuck_timeout_s" default="4.0" />
+  <arg name="nav_replan_min_interval_s" default="1.4" />
+  <arg name="nav_blocked_replan_s" default="2.0" />
+  <arg name="nav_front_replan_after_s" default="1.6" />
+  <arg name="nav_lookahead_dist_m" default="0.56" />
+  <arg name="nav_min_tracking_speed" default="0.18" />
+  <arg name="nav_turn_creep_speed" default="0.12" />
+  <arg name="nav_final_slow_radius_m" default="0.45" />
+  <arg name="nav_final_slow_speed" default="0.22" />
+  <arg name="nav_final_creep_radius_m" default="0.25" />
+  <arg name="nav_final_creep_speed" default="0.10" />
+  <arg name="nav_hard_clearance_m" default="0.16" />
+  <arg name="nav_preferred_clearance_m" default="0.34" />
+  <arg name="nav_smooth_clearance_m" default="0.22" />
+
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_vision_guard" default="false" />
+  <arg name="vision_guard_enabled" default="false" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="camera_width" default="1280" />
+  <arg name="camera_height" default="720" />
+  <arg name="camera_rate" default="15" />
+
+  <arg name="qr_target_count" default="3" />
+  <arg name="qr_scan_per_wall_s" default="2.8" />
+  <arg name="qr_first_wall_scan_s" default="6.0" />
+  <arg name="qr_settle_s" default="0.45" />
+  <arg name="qr_first_wall_settle_s" default="1.6" />
+  <arg name="qr_process_rate_hz" default="12.0" />
+  <arg name="qr_angular_speed" default="0.52" />
+  <arg name="qr_fetch_url" default="true" />
+  <arg name="qr_fetch_timeout_s" default="6.0" />
+  <arg name="qr_fetch_retries" default="3" />
+  <arg name="qr_fetch_retry_delay_s" default="0.4" />
+  <arg name="qr_item_topic" default="/qr_room_scan_item" />
+  <arg name="qr_control_topic" default="/qr_room_scan_control" />
+  <arg name="qr_after_item_decision_wait_s" default="0.0" />
+  <arg name="qr_micro_sweep_deg" default="16.0" />
+  <arg name="qr_first_wall_micro_sweep_deg" default="28.0" />
+  <arg name="qr_first_wall_micro_sweep_scan_s" default="2.0" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node if="$(arg start_camera)"
+        name="ucar_camera" pkg="ucar_camera" type="ucar_camera.py"
+        output="screen" respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="$(arg camera_topic)" />
+    <param name="device_path" value="$(arg camera_device)" />
+    <param name="image_width" value="$(arg camera_width)" />
+    <param name="image_height" value="$(arg camera_height)" />
+    <param name="rate" value="$(arg camera_rate)" />
+  </node>
+
+  <node if="$(arg start_map)"
+        name="map_server" pkg="map_server" type="map_server"
+        args="$(arg map_yaml)" output="screen" respawn="true">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <include if="$(arg start_amcl)"
+           file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <node if="$(arg start_vision_guard)"
+        pkg="iden_controller" type="global_first_vision_guard.py"
+        name="global_first_vision_guard" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <param name="enabled" value="$(arg vision_guard_enabled)" />
+    <param name="cmd_vel_in_topic" value="/cmd_vel_graph_raw" />
+    <param name="cmd_vel_out_topic" value="/cmd_vel_raw" />
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="pass_through_on_no_image" value="true" />
+    <param name="image_timeout_s" value="0.8" />
+    <param name="roi_y_min_frac" value="0.58" />
+    <param name="roi_y_max_frac" value="0.95" />
+    <param name="sample_step_px" value="6" />
+    <param name="bright_threshold" value="205" />
+    <param name="min_confidence" value="0.28" />
+    <param name="center_deadband_frac" value="0.055" />
+    <param name="max_correction_wz" value="0.10" />
+    <param name="max_abs_wz" value="0.72" />
+    <param name="offset_slow_start_frac" value="0.18" />
+    <param name="offset_stop_frac" value="0.46" />
+    <param name="min_slow_ratio" value="0.50" />
+    <param name="allow_visual_stop" value="false" />
+  </node>
+
+  <node if="$(arg start_safety_monitor)"
+        pkg="iden_controller" type="global_first_safety_monitor.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <param name="cmd_vel_in_topic" value="/cmd_vel_raw" />
+    <param name="cmd_vel_out_topic" value="/cmd_vel" />
+    <param name="scan_topic" value="/scan" />
+    <param name="enabled" value="true" />
+    <param name="swap_left_right" value="false" />
+    <param name="front_stop_m" value="0.24" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_slow_m" value="0.35" />
+    <param name="side_stop_m" value="0.16" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_avoid_m" value="0.18" />
+    <param name="side_slow_m" value="0.23" />
+    <param name="rear_stop_m" value="0.24" />
+    <param name="front_angle_deg" value="34.0" />
+    <param name="side_angle_min_deg" value="35.0" />
+    <param name="side_angle_max_deg" value="76.0" />
+    <param name="rear_angle_deg" value="35.0" />
+    <param name="min_turn_wz" value="0.16" />
+    <param name="max_turn_wz" value="0.36" />
+    <param name="clear_slow_ratio" value="0.92" />
+    <param name="allow_reverse" value="false" />
+    <param name="escape_enabled" value="true" />
+    <param name="escape_back_speed" value="0.07" />
+    <param name="escape_back_time_s" value="0.6" />
+    <param name="escape_cooldown_s" value="2.5" />
+    <param name="escape_rear_clear_m" value="0.34" />
+    <param name="escape_front_release_m" value="0.34" />
+    <param name="escape_turn_wz" value="0.06" />
+    <param name="scan_timeout" value="0.7" />
+  </node>
+
+  <node pkg="iden_controller" type="global_first_graph_nav_2249fcf.py"
+        name="global_first_graph_nav" output="screen"
+        respawn="false">
+    <rosparam file="$(arg config_yaml)" command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="goal_x" value="$(arg goal_x)" />
+    <param name="goal_y" value="$(arg goal_y)" />
+    <param name="goal_yaw" value="$(arg goal_yaw)" />
+    <param name="waypoint_enabled" value="$(arg waypoint_enabled)" />
+    <param name="waypoint_x" value="$(arg waypoint_x)" />
+    <param name="waypoint_y" value="$(arg waypoint_y)" />
+    <param name="initial_pose_x" value="$(arg initial_pose_x)" />
+    <param name="initial_pose_y" value="$(arg initial_pose_y)" />
+    <param name="initial_pose_yaw" value="$(arg initial_pose_yaw)" />
+    <param name="goal_tolerance_m" value="$(arg nav_goal_tolerance_m)" />
+    <param name="goal_yaw_tolerance_deg" value="$(arg nav_goal_yaw_tolerance_deg)" />
+    <param name="goal_hold_s" value="$(arg nav_goal_hold_s)" />
+    <param name="stuck_timeout_s" value="$(arg nav_stuck_timeout_s)" />
+    <param name="replan_min_interval_s" value="$(arg nav_replan_min_interval_s)" />
+    <param name="blocked_replan_s" value="$(arg nav_blocked_replan_s)" />
+    <param name="front_replan_after_s" value="$(arg nav_front_replan_after_s)" />
+    <param name="lookahead_dist_m" value="$(arg nav_lookahead_dist_m)" />
+    <param name="min_tracking_speed" value="$(arg nav_min_tracking_speed)" />
+    <param name="turn_creep_speed" value="$(arg nav_turn_creep_speed)" />
+    <param name="final_slow_radius_m" value="$(arg nav_final_slow_radius_m)" />
+    <param name="final_slow_speed" value="$(arg nav_final_slow_speed)" />
+    <param name="final_creep_radius_m" value="$(arg nav_final_creep_radius_m)" />
+    <param name="final_creep_speed" value="$(arg nav_final_creep_speed)" />
+    <param name="hard_clearance_m" value="$(arg nav_hard_clearance_m)" />
+    <param name="preferred_clearance_m" value="$(arg nav_preferred_clearance_m)" />
+    <param name="smooth_clearance_m" value="$(arg nav_smooth_clearance_m)" />
+  </node>
+
+  <node pkg="iden_controller" type="global_first_nav_qr_room_scan_wall_align_v1.py"
+        name="global_first_nav_qr_room_scan" output="screen">
+    <param name="nav_status_topic" value="/global_first_graph_nav/status" />
+    <param name="nav_node_name" value="/global_first_graph_nav" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="odom_topic" value="/odom" />
+    <param name="scan_topic" value="/scan" />
+    <param name="target_qr_count" value="$(arg qr_target_count)" />
+    <param name="item_topic" value="$(arg qr_item_topic)" />
+    <param name="control_topic" value="$(arg qr_control_topic)" />
+    <param name="after_item_decision_wait_s" value="$(arg qr_after_item_decision_wait_s)" />
+    <param name="scan_per_wall_s" value="$(arg qr_scan_per_wall_s)" />
+    <param name="first_wall_scan_s" value="$(arg qr_first_wall_scan_s)" />
+    <param name="settle_s" value="$(arg qr_settle_s)" />
+    <param name="first_wall_settle_s" value="$(arg qr_first_wall_settle_s)" />
+    <param name="process_rate_hz" value="$(arg qr_process_rate_hz)" />
+    <param name="angular_speed" value="$(arg qr_angular_speed)" />
+    <param name="fetch_url" value="$(arg qr_fetch_url)" />
+    <param name="fetch_timeout_s" value="$(arg qr_fetch_timeout_s)" />
+    <param name="fetch_retries" value="$(arg qr_fetch_retries)" />
+    <param name="fetch_retry_delay_s" value="$(arg qr_fetch_retry_delay_s)" />
+    <param name="micro_sweep_deg" value="$(arg qr_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_deg" value="$(arg qr_first_wall_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_scan_s" value="$(arg qr_first_wall_micro_sweep_scan_s)" />
+    <param name="qr_wall_sector_deg" value="62.0" />
+    <param name="qr_wall_tolerance_deg" value="2.8" />
+    <param name="qr_center_tolerance_px" value="24.0" />
+    <param name="qr_lateral_limit_m" value="0.20" />
+    <param name="qr_side_hard_m" value="0.17" />
+  </node>
+</launch>

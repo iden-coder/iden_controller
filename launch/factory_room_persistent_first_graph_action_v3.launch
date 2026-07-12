@@ -1,0 +1,49 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+
+  <node pkg="iden_controller" type="persistent_first_graph_action_server_v3.py"
+        name="factory_room_persistent_first_graph" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/global_first_graph_nav_2249fcf.yaml"
+              command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="action_name" value="/factory_room/move_base" />
+    <param name="stale_first_nav_node" value="/global_first_graph_nav" />
+    <param name="clear_service_name" value="/factory_room/move_base/clear_costmaps" />
+    <param name="publish_initial_pose_on_start" value="false" />
+    <param name="require_start_near_initial" value="false" />
+    <param name="require_goal_yaw" value="true" />
+    <param name="waypoint_enabled" value="false" />
+    <param name="entry_waypoint_x" value="-0.85" />
+    <param name="entry_waypoint_y" value="-1.41" />
+    <param name="entry_goal_y_threshold" value="-1.75" />
+    <param name="entry_target_x" value="-0.85" />
+    <param name="entry_target_y" value="-1.90" />
+    <param name="entry_target_match_radius_m" value="0.32" />
+    <param name="entry_accept_y" value="-1.78" />
+    <param name="indoor_trigger_y" value="-1.75" />
+    <param name="cone_mapping_activation_y" value="-1.95" />
+    <param name="indoor_front_mark_range_m" value="0.72" />
+    <param name="indoor_cone_radius_m" value="0.15" />
+    <param name="indoor_cone_exclusion_radius_m" value="0.20" />
+    <param name="indoor_dynamic_obstacle_radius_m" value="0.20" />
+    <param name="observation_accept_radius_m" value="0.26" />
+    <param name="indoor_hard_clearance_m" value="0.19" />
+    <param name="indoor_preferred_clearance_m" value="0.30" />
+    <param name="indoor_smooth_clearance_m" value="0.21" />
+    <param name="indoor_emergency_clearance_m" value="0.17" />
+    <param name="indoor_wall_front_stop_m" value="0.24" />
+    <param name="indoor_wall_front_slow_m" value="0.40" />
+    <param name="indoor_wall_side_stop_m" value="0.16" />
+    <param name="indoor_wall_side_slow_m" value="0.25" />
+    <param name="indoor_wall_proximity_weight" value="2.8" />
+    <param name="indoor_max_linear_vel" value="0.28" />
+    <param name="indoor_lookahead_dist_m" value="0.34" />
+    <param name="navigation_recovery_enabled" value="true" />
+    <param name="navigation_recovery_stuck_s" value="9.0" />
+    <param name="navigation_recovery_progress_m" value="0.045" />
+    <param name="navigation_recovery_goal_guard_m" value="0.12" />
+    <param name="navigation_recovery_turn_speed" value="0.24" />
+    <param name="navigation_recovery_turn_time_s" value="0.90" />
+  </node>
+</launch>

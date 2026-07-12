@@ -1,0 +1,52 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+
+  <node pkg="iden_controller"
+        type="factory_room_global_first_action_bridge_indoor_v2.py"
+        name="factory_room_global_first_bridge" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/global_first_graph_nav_2249fcf.yaml"
+              command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="action_name" value="/factory_room/move_base" />
+    <param name="clear_service_name" value="/factory_room/move_base/clear_costmaps" />
+    <param name="publish_initial_pose_on_start" value="false" />
+    <param name="require_start_near_initial" value="false" />
+    <param name="waypoint_enabled" value="false" />
+    <param name="require_goal_yaw" value="true" />
+
+    <!-- Preserve the original doorway behavior until the robot is fully inside. -->
+    <param name="indoor_trigger_y" value="-1.75" />
+    <param name="indoor_trigger_less_than" value="true" />
+
+    <!-- Rectangular-body clearance equivalents used only in the large room. -->
+    <param name="indoor_hard_clearance_m" value="0.23" />
+    <param name="indoor_preferred_clearance_m" value="0.48" />
+    <param name="indoor_emergency_clearance_m" value="0.20" />
+    <param name="indoor_smooth_clearance_m" value="0.31" />
+    <param name="indoor_dynamic_obstacle_radius_m" value="0.30" />
+    <param name="indoor_proximity_weight" value="5.0" />
+    <param name="indoor_front_stop_m" value="0.31" />
+    <param name="indoor_front_slow_m" value="0.55" />
+    <param name="indoor_side_stop_m" value="0.20" />
+    <param name="indoor_side_slow_m" value="0.35" />
+    <param name="indoor_max_linear_vel" value="0.28" />
+    <param name="indoor_lookahead_dist_m" value="0.34" />
+    <param name="indoor_front_replan_after_s" value="0.25" />
+    <param name="indoor_blocked_replan_s" value="0.45" />
+    <param name="indoor_replan_min_interval_s" value="0.45" />
+
+    <!-- Proactive cone clusters: map before the emergency stop zone. -->
+    <param name="indoor_proactive_obstacles" value="true" />
+    <param name="indoor_proactive_period_s" value="0.30" />
+    <param name="indoor_proactive_angle_deg" value="92.0" />
+    <param name="indoor_proactive_min_range_m" value="0.28" />
+    <param name="indoor_proactive_max_range_m" value="0.95" />
+    <param name="indoor_proactive_cluster_gap_m" value="0.10" />
+    <param name="indoor_proactive_cluster_max_span_m" value="0.34" />
+    <param name="indoor_proactive_static_clearance_m" value="0.12" />
+    <param name="indoor_proactive_merge_distance_m" value="0.18" />
+    <param name="indoor_proactive_radius_m" value="0.30" />
+    <param name="indoor_proactive_max_clusters" value="5" />
+  </node>
+</launch>

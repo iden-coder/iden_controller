@@ -1,0 +1,21 @@
+# Override for a 6.6 cm chassis-nose gap.
+# Laser-to-nose longitudinal offset is approximately 6.1 cm:
+# 0.066 m + 0.061 m = 0.127 m laser-to-wall target.
+final_wall_distance_m: 0.127
+final_wall_tolerance_m: 0.006
+final_fail_tolerance_m: 0.018
+
+# Stop before the safety monitor's 9.5 cm parking stop threshold. This guard
+# acts independently if an unexpected object is closer than the fitted wall.
+front_emergency_m: 0.105
+approach_slow_error_m: 0.15
+approach_fast_speed: 0.100
+approach_slow_speed: 0.024
+final_stable_frames: 6
+
+# Tighter centerline lock so the chassis remains inside the marked area.
+# Keep a low near-center speed to avoid oscillating across the target.
+sign_center_tolerance_px: 20.0
+sign_stable_frames: 3
+near_center_band_px: 44.0
+near_center_min_speed: 0.010

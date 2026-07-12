@@ -1,0 +1,6 @@
+# Override V1 final parking distance: 17.1 cm laser-wall minus 6.1 cm offset
+# leaves an 11.0 cm chassis-nose gap.
+center_final_wall_distance_m: 0.171
+center_final_wall_tolerance_m: 0.006
+center_final_fail_tolerance_m: 0.018
+

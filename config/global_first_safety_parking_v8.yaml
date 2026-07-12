@@ -1,0 +1,45 @@
+cmd_vel_in_topic: /cmd_vel_raw
+cmd_vel_out_topic: /cmd_vel
+scan_topic: /scan
+odom_topic: /odom
+enabled: true
+swap_left_right: false
+
+front_stop_m: 0.24
+front_critical_m: 0.17
+front_slow_m: 0.35
+side_stop_m: 0.16
+side_critical_m: 0.12
+side_avoid_m: 0.18
+side_slow_m: 0.23
+rear_stop_m: 0.24
+front_angle_deg: 34.0
+side_angle_min_deg: 35.0
+side_angle_max_deg: 76.0
+rear_angle_deg: 35.0
+min_turn_wz: 0.16
+max_turn_wz: 0.36
+clear_slow_ratio: 0.94
+allow_reverse: false
+
+escape_enabled: true
+escape_back_speed: 0.07
+escape_back_time_s: 0.6
+escape_cooldown_s: 2.5
+escape_rear_clear_m: 0.34
+escape_front_release_m: 0.34
+escape_turn_wz: 0.06
+scan_timeout: 0.7
+
+parking_mode_topic: /factory/parking_close_mode
+parking_mode_timeout_s: 0.8
+parking_front_stop_m: 0.095
+parking_front_critical_m: 0.075
+parking_front_slow_m: 0.14
+parking_side_hard_m: 0.105
+parking_max_lateral_speed: 0.045
+parking_heading_gate_wz: 0.070
+parking_close_wall_m: 0.18
+parking_close_max_wz: 0.055
+parking_lateral_travel_limit_m: 0.07
+

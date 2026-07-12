@@ -1,0 +1,74 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <node if="$(arg start_safety_monitor)"
+        pkg="iden_controller" type="global_first_safety_monitor_indoor_v1.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="indoor_trigger_y" value="-1.75" />
+    <param name="indoor_front_critical_m" value="0.22" />
+    <param name="indoor_front_stop_m" value="0.31" />
+    <param name="indoor_front_slow_m" value="0.55" />
+    <param name="indoor_side_critical_m" value="0.15" />
+    <param name="indoor_side_stop_m" value="0.20" />
+    <param name="indoor_side_avoid_m" value="0.25" />
+    <param name="indoor_side_slow_m" value="0.35" />
+    <param name="parking_lateral_travel_limit_m" value="0.48" />
+    <param name="parking_max_lateral_speed" value="0.10" />
+    <param name="parking_max_reverse_speed" value="0.045" />
+    <param name="parking_retreat_rear_clear_m" value="0.32" />
+    <param name="parking_retreat_max_wz" value="0.035" />
+  </node>
+
+  <include file="$(find iden_controller)/launch/factory_room_global_first_bridge_indoor_v2.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+  </include>
+
+  <node pkg="iden_controller" type="run_factory_room_ocr_ros.sh"
+        name="factory_room_ocr" output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="4.0" />
+    <param name="vote_window" value="10" />
+    <param name="vote_need" value="5" />
+    <param name="enabled_on_start" value="false" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_delivery_manager_center_only_v3.py"
+        name="factory_room_delivery_manager" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_mission_parking_v7.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v2.yaml"
+              command="load" />
+    <!-- First-nav handoff goes beyond the doorway before d1 is considered. -->
+    <param name="navigate_start_pose" value="true" />
+    <rosparam param="start_pose">[-0.85, -1.90, -1.5707963268]</rosparam>
+    <param name="entry_launch_file" value="global_first_graph_nav_room_entry_v1.launch" />
+    <param name="entry_node_name" value="/global_first_graph_nav_room_entry" />
+    <param name="entry_status_topic" value="/global_first_graph_nav_room_entry/status" />
+    <param name="entry_timeout_s" value="150.0" />
+    <param name="entry_map_yaml" value="$(arg map_yaml)" />
+    <!-- Do not cancel a valid graph build or slow obstacle-avoidance motion. -->
+    <param name="nav_stuck_timeout_s" value="18.0" />
+    <param name="nav_progress_m" value="0.035" />
+    <param name="task_result_topic" value="/factory/subtask1_result" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="scan_topic" value="/scan" />
+    <param name="pose_topic" value="/amcl_pose" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="parking_close_mode_topic" value="/factory/parking_close_mode" />
+    <param name="move_base_action" value="/factory_room/move_base" />
+    <param name="clear_costmaps_service" value="/factory_room/move_base/clear_costmaps" />
+  </node>
+</launch>

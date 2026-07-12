@@ -29,7 +29,13 @@ roslaunch iden_controller subtask1_real_factory.launch
 roslaunch iden_controller factory_ocr_from_package.launch
 
 # 第一二部分所有（还没有完善）
-~/instant_ws/src/iden_controller/scripts/start_subtask1_factory_delivery_complete.sh
+~/instant_ws/src/iden_controller/scripts/start_subtask1_factory_delivery_complete_center_only_v2.sh
 
-# 测试停止在白框里的能力
- ~/instant_ws/src/iden_controller/scripts/start_white_box_parking_test_v7.sh
+# 测试停止在白框里的能力（白框法）
+~/instant_ws/src/iden_controller/scripts/start_white_box_parking_test_v7.sh
+
+# 测试停止在白框里的能力（中心线法）
+~/instant_ws/src/iden_controller/scripts/start_factory_sign_center_only_parking_test_v2.sh
+
+# 测试停止在白框里的能力（融合法）
+~/instant_ws/src/iden_controller/scripts/start_factory_sign_center_parking_test_v4.sh
