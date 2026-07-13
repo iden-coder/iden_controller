@@ -1,0 +1,54 @@
+route_points:
+  - {name: first_stage, x: -1.48, y: -0.45, yaw: 3.1415926, tolerance: 0.10, require_yaw: false}
+  - {name: doorway_approach, x: -0.85, y: -1.41, yaw: -1.5707963, tolerance: 0.16, require_yaw: false}
+  - {name: room_entry, x: -0.85, y: -1.90, yaw: -1.5707963, tolerance: 0.20, require_yaw: false}
+  - {name: d1, x: -1.43, y: -2.57, yaw: 3.1415926, tolerance: 0.14, require_yaw: false}
+  - {name: d2, x: 0.41, y: -2.00, yaw: 1.5707963, tolerance: 0.14, require_yaw: false}
+  - {name: d3, x: 2.54, y: -2.51, yaw: -1.5707963, tolerance: 0.10, require_yaw: true}
+
+route_hold_s: 0.08
+route_final_hold_s: 0.45
+route_yaw_tolerance_deg: 9.0
+route_yaw_speed_rps: 0.28
+
+# Activated only after the robot has crossed into the large room.
+room_profile_trigger_y: -1.75
+room_cruise_mps: 0.40
+room_max_turn_rps: 0.86
+room_max_lateral_mps: 0.0
+room_front_angle_deg: 48.0
+room_avoid_front_influence_m: 0.65
+room_avoid_front_stop_m: 0.27
+room_avoid_lateral_trigger_m: 0.43
+room_avoid_lateral_side_need_m: 0.22
+room_avoid_turn_gain_rps: 0.60
+room_side_stop_m: 0.19
+room_side_slow_m: 0.30
+room_avoid_direction_hold_s: 0.90
+room_cone_base_pad_m: 0.10
+room_wall_front_relax_m: 0.09
+room_wall_side_relax_m: 0.05
+
+room_emergency_front_abort_m: 0.12
+room_wall_escape_lateral_mps: 0.0
+
+doorway_cruise_mps: 0.30
+doorway_max_lateral_mps: 0.035
+doorway_front_angle_deg: 30.0
+doorway_front_influence_m: 0.48
+doorway_front_stop_m: 0.21
+
+room_dynamic_replan_enabled: true
+room_dynamic_obstacle_radius_m: 0.20
+room_dynamic_path_trigger_m: 0.25
+room_dynamic_observation_range_m: 1.20
+room_dynamic_replan_interval_s: 1.00
+room_dynamic_observation_ttl_s: 3.00
+room_dynamic_confirm_s: 0.25
+room_dynamic_stuck_replan_s: 2.80
+
+final_approach_radius_m: 0.34
+final_approach_speed_mps: 0.18
+final_wall_front_relax_m: 0.17
+final_wall_side_relax_m: 0.10
+final_approach_topic: /two_stage/final_approach

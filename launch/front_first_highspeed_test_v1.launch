@@ -1,0 +1,53 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+  <node if="$(arg start_map)" name="map_server" pkg="map_server"
+        type="map_server" args="$(arg map_yaml)" output="screen" respawn="true">
+    <param name="frame_id" value="map" />
+  </node>
+  <include if="$(arg start_amcl)"
+           file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <node if="$(arg start_safety_monitor)"
+        pkg="iden_controller" type="universal_omni_safety_monitor_v1.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="parking_passthrough" value="false" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_stop_m" value="0.21" />
+    <param name="front_slow_m" value="0.36" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_stop_m" value="0.15" />
+    <param name="side_slow_m" value="0.235" />
+    <param name="nav_max_forward_mps" value="0.60" />
+    <param name="nav_max_lateral_mps" value="0.06" />
+    <param name="nav_max_angular_rps" value="0.84" />
+  </node>
+
+  <node pkg="iden_controller" type="front_first_smooth_navigation_v1.py"
+        name="front_first_smooth_navigation" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/front_first_smooth_navigation_v1.yaml"
+              command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="goal_x" value="$(arg goal_x)" />
+    <param name="goal_y" value="$(arg goal_y)" />
+    <param name="goal_yaw" value="$(arg goal_yaw)" />
+  </node>
+</launch>

@@ -9,15 +9,24 @@ vx/vy/wz trajectory search perform real-time avoidance everywhere.
 """
 
 import math
+import os
+import pickle
+import threading
+import time
+import zlib
 
 import rospy
 from geometry_msgs.msg import Twist
 
 from global_first_graph_nav_2249fcf import (
+    GlobalFirstGraphPlanner,
+    GridMap,
     INF,
     RosGlobalFirstGraphNavigator,
     clamp,
+    load_map_yaml,
     norm_angle,
+    yaw_from_quat,
 )
 
 
@@ -28,6 +37,7 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         self.last_vy = 0.0
         self.last_selected_side = 0
         self.dynamic_memory = {}
+        self.dynamic_memory_lock = threading.RLock()
         self.dynamic_cluster_count = 0
         # Laser callbacks may arrive while the parent constructor is loading
         # the map, before ROS parameters below are read.
@@ -36,6 +46,8 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         self.memory_ttl = 1.80
         self.memory_voxel = 0.045
         self.static_match_radius = 0.11
+        self.dynamic_confirmations = 2
+        self.dynamic_confirmation_window = 0.45
         self.max_forward = 0.52
         self.max_lateral = 0.22
         self.max_local_angular = 0.75
@@ -45,6 +57,9 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         self.recovery_cmd = (0.0, 0.0, 0.0)
         self.recovery_replan_pending = False
         self.recovery_count = 0
+        self.accel_x = 0.0
+        self.accel_y = 0.0
+        self.accel_wz = 0.0
         super(UniversalOmniNavigator, self).__init__()
 
         self.horizon_s = float(rospy.get_param("~local_horizon_s", 1.25))
@@ -55,6 +70,10 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             "~dynamic_memory_ttl_s", 1.80))
         self.memory_voxel = float(rospy.get_param(
             "~dynamic_memory_voxel_m", 0.045))
+        self.dynamic_confirmations = max(1, int(rospy.get_param(
+            "~dynamic_confirmations", 2)))
+        self.dynamic_confirmation_window = float(rospy.get_param(
+            "~dynamic_confirmation_window_s", 0.45))
         self.static_match_radius = float(rospy.get_param(
             "~static_scan_match_radius_m", 0.11))
 
@@ -116,6 +135,16 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         self.score_switch = float(rospy.get_param("~score_side_switch", 0.35))
         self.score_speed_reward = float(rospy.get_param(
             "~score_speed_reward", 0.90))
+        self.score_velocity_continuity = float(rospy.get_param(
+            "~score_velocity_continuity", 5.0))
+        self.score_angular_continuity = float(rospy.get_param(
+            "~score_angular_continuity", 1.2))
+        self.linear_jerk = float(rospy.get_param(
+            "~linear_jerk_mps3", 2.2))
+        self.lateral_jerk = float(rospy.get_param(
+            "~lateral_jerk_mps3", 2.0))
+        self.angular_jerk = float(rospy.get_param(
+            "~angular_jerk_rps3", 4.0))
 
         self.universal_ready = True
         self.path_world = []
@@ -127,6 +156,77 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             self.goal_x, self.goal_y, math.degrees(self.goal_yaw),
             self.max_forward, self.max_lateral, self.max_local_angular,
             self.horizon_s)
+
+    def load_static_map(self):
+        """Load the map and reuse a validated static distance-field cache."""
+        from nav_msgs.msg import OccupancyGrid
+        from nav_msgs.srv import GetMap
+
+        map_service = rospy.get_param("~map_service", "/static_map")
+        map_topic = rospy.get_param("~map_topic", "/map")
+        map_yaml = rospy.get_param("~map_yaml", "")
+        cache_path = rospy.get_param(
+            "~distance_cache_file",
+            "/home/ucar/instant_ws/src/iden_controller/config/"
+            "universal_omni_distance_cache_v1.pkl")
+        msg = None
+        try:
+            rospy.wait_for_service(map_service, timeout=5.0)
+            msg = rospy.ServiceProxy(map_service, GetMap)().map
+            rospy.logwarn("UniversalOmni: loaded static map from %s", map_service)
+        except Exception as exc:
+            rospy.logwarn("UniversalOmni: map service failed: %s", str(exc))
+        if msg is None:
+            try:
+                msg = rospy.wait_for_message(
+                    map_topic, OccupancyGrid, timeout=5.0)
+            except Exception as exc:
+                rospy.logwarn("UniversalOmni: map topic failed: %s", str(exc))
+
+        if msg is not None:
+            yaw = yaw_from_quat(msg.info.origin.orientation)
+            origin = (msg.info.origin.position.x,
+                      msg.info.origin.position.y, yaw)
+            self.grid = GridMap(
+                msg.info.width, msg.info.height, msg.info.resolution,
+                origin, msg.data, self.occupied_threshold,
+                self.unknown_is_obstacle)
+        elif map_yaml:
+            self.grid = load_map_yaml(
+                map_yaml, self.occupied_threshold, self.unknown_is_obstacle)
+        else:
+            raise RuntimeError("no static map available")
+
+        raw = bytes((int(value) + 256) % 256 for value in self.grid.data)
+        key = (
+            self.grid.width, self.grid.height, round(self.grid.resolution, 7),
+            round(self.grid.origin_x, 6), round(self.grid.origin_y, 6),
+            round(self.grid.origin_yaw, 6), self.grid.occupied_threshold,
+            self.grid.unknown_is_obstacle, zlib.crc32(raw))
+        loaded = False
+        t0 = time.time()
+        try:
+            with open(cache_path, "rb") as handle:
+                cached = pickle.load(handle)
+            if cached.get("key") == key and len(cached.get("dist", [])) == len(raw):
+                self.grid.dist_cells = cached["dist"]
+                loaded = True
+        except Exception:
+            pass
+        if not loaded:
+            self.grid.compute_distance_field()
+            try:
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                with open(cache_path, "wb") as handle:
+                    pickle.dump(
+                        {"key": key, "dist": self.grid.dist_cells},
+                        handle, protocol=pickle.HIGHEST_PROTOCOL)
+            except Exception as exc:
+                rospy.logwarn("UniversalOmni: cache write failed: %s", str(exc))
+        self.planner = GlobalFirstGraphPlanner(self.grid, self.params)
+        rospy.logwarn(
+            "UNIVERSAL_DISTANCE_FIELD cache=%s elapsed=%.3fs",
+            "hit" if loaded else "built", time.time() - t0)
 
     def static_occupied_near(self, wx, wy):
         if self.grid is None:
@@ -175,7 +275,19 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             residual_base.append((bx, by, wx, wy))
             key = (int(round(wx / self.memory_voxel)),
                    int(round(wy / self.memory_voxel)))
-            self.dynamic_memory[key] = (wx, wy, now_sec)
+            with self.dynamic_memory_lock:
+                previous_value = self.dynamic_memory.get(key)
+                if (previous_value is not None and
+                        now_sec - previous_value[2] <=
+                        self.dynamic_confirmation_window):
+                    count = min(previous_value[3] + 1, 20)
+                    # Low-pass the world point so AMCL jitter does not make a
+                    # stationary surface jump between local trajectories.
+                    wx = 0.55 * previous_value[0] + 0.45 * wx
+                    wy = 0.55 * previous_value[1] + 0.45 * wy
+                else:
+                    count = 1
+                self.dynamic_memory[key] = (wx, wy, now_sec, count)
 
         # Estimate only the number/shape of observed objects.  Collision
         # checking still uses every surface voxel, so no object radius is
@@ -193,13 +305,19 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             previous = (bx, by)
         self.dynamic_cluster_count = clusters
 
-        stale = [key for key, value in self.dynamic_memory.items()
-                 if now_sec - value[2] > self.memory_ttl]
-        for key in stale:
-            del self.dynamic_memory[key]
+        with self.dynamic_memory_lock:
+            stale = [key for key, value in self.dynamic_memory.items()
+                     if now_sec - value[2] > self.memory_ttl]
+            for key in stale:
+                del self.dynamic_memory[key]
+            memory_size = len(self.dynamic_memory)
+            confirmed_size = sum(
+                1 for value in self.dynamic_memory.values()
+                if value[3] >= self.dynamic_confirmations)
         rospy.logwarn_throttle(
-            1.0, "UNIVERSAL_OBSTACLES clusters=%d live_surface_voxels=%d",
-            self.dynamic_cluster_count, len(self.dynamic_memory))
+            1.0,
+            "UNIVERSAL_OBSTACLES clusters=%d raw_voxels=%d confirmed=%d",
+            self.dynamic_cluster_count, memory_size, confirmed_size)
 
     def current_obstacles_base(self):
         walls = []
@@ -222,8 +340,12 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
                 walls.append((bx, by))
 
         now_sec = rospy.Time.now().to_sec()
-        for wx, wy, stamp in self.dynamic_memory.values():
+        with self.dynamic_memory_lock:
+            memory_snapshot = list(self.dynamic_memory.values())
+        for wx, wy, stamp, count in memory_snapshot:
             if now_sec - stamp > self.memory_ttl:
+                continue
+            if count < self.dynamic_confirmations:
                 continue
             dx = wx - px
             dy = wy - py
@@ -238,8 +360,8 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         x, y, yaw = self.pose
         result = []
         start = max(0, self.path_index - 2)
-        end = min(len(self.path_world), start + 90)
-        for i in range(start, end, 2):
+        end = min(len(self.path_world), start + 72)
+        for i in range(start, end, 3):
             dx = self.path_world[i][0] - x
             dy = self.path_world[i][1] - y
             result.append((
@@ -282,24 +404,31 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             best = min(best, gap)
         return best
 
-    def adaptive_cruise_speed(self, walls, dynamic):
-        # A nearby side wall must not make an otherwise open corridor slow.
-        # Candidate simulation still checks all 360-degree points.
-        walls_ahead = [point for point in walls
-                       if point[0] > -0.02 and
-                       abs(point[1]) < max(0.30, 0.62 * point[0])]
-        dynamic_ahead = [point for point in dynamic
-                         if point[0] > -0.02 and
-                         abs(point[1]) < max(0.30, 0.62 * point[0])]
-        clearance = min(
-            self.nearest_distance(0.0, 0.0, walls_ahead),
-            self.nearest_distance(0.0, 0.0, dynamic_ahead))
-        if clearance >= 1.10:
+    def adaptive_cruise_speed(self, walls, dynamic, desired):
+        # Measure free distance in the intended travel corridor.  Parallel
+        # side walls are excluded, but any surface crossing the swept width is
+        # retained.  Full 360-degree collision checks still run afterwards.
+        cos_d = math.cos(desired)
+        sin_d = math.sin(desired)
+        best_gap = INF
+        for points, lateral_limit in (
+                (walls, self.robot_half_width + self.footprint_margin +
+                 self.wall_preferred_gap),
+                (dynamic, self.robot_half_width + self.footprint_margin +
+                 self.dynamic_preferred_gap)):
+            for px, py in points:
+                forward = cos_d * px + sin_d * py
+                lateral = -sin_d * px + cos_d * py
+                if forward > 0.0 and abs(lateral) <= lateral_limit:
+                    best_gap = min(
+                        best_gap,
+                        forward - self.robot_half_length - self.footprint_margin)
+        if best_gap >= 0.95:
             return self.max_forward
-        if clearance <= 0.38:
-            return max(self.min_translation, self.max_forward * 0.28)
-        ratio = (clearance - 0.38) / (1.10 - 0.38)
-        return self.max_forward * (0.28 + 0.72 * ratio)
+        if best_gap <= 0.16:
+            return max(self.min_translation, self.max_forward * 0.35)
+        ratio = (best_gap - 0.16) / (0.95 - 0.16)
+        return self.max_forward * (0.35 + 0.65 * ratio)
 
     def candidate_commands(self, target, walls, dynamic):
         x, y, yaw = self.pose
@@ -308,26 +437,25 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         local_x = math.cos(yaw) * dx + math.sin(yaw) * dy
         local_y = -math.sin(yaw) * dx + math.cos(yaw) * dy
         desired = math.atan2(local_y, max(local_x, 1.0e-4))
-        speed = self.adaptive_cruise_speed(walls, dynamic)
+        speed = self.adaptive_cruise_speed(walls, dynamic, desired)
         speed *= clamp(self.distance_to_active_goal() / 0.55, 0.30, 1.0)
         speed = max(self.min_translation, speed)
         nominal_wz = clamp(0.80 * desired,
                            -self.max_local_angular, self.max_local_angular)
         commands = []
-        for offset in (0, 14, -14, 28, -28, 44, -44, 62, -62, 78, -78):
+        for offset in (0, 20, -20, 42, -42, 68, -68):
             direction = desired + math.radians(offset)
-            for scale in (1.0, 0.72, 0.46):
+            for scale in (1.0, 0.58, 0.32):
                 candidate_speed = speed * scale
                 vx = max(0.02, candidate_speed * math.cos(direction))
                 vy = clamp(candidate_speed * math.sin(direction),
                            -self.max_lateral, self.max_lateral)
-                for turn_scale in (1.0, 0.35, 0.0):
+                for turn_scale in (1.0, 0.25):
                     commands.append((
                         vx, vy,
                         clamp(nominal_wz * turn_scale,
                               -self.max_local_angular,
                               self.max_local_angular)))
-        commands.append((0.0, 0.0, nominal_wz))
         return commands, (local_x, local_y)
 
     def evaluate(self, command, target_local, path_local, walls, dynamic):
@@ -357,10 +485,10 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             # that monotonically increases clearance; reject motion that stays
             # equally close or moves farther into the obstacle.
             if (wall_clear <= 0.0 and
-                    wall_clear <= start_wall + 0.004):
+                    wall_clear < start_wall - 0.003):
                 return None
             if (dynamic_clear <= 0.0 and
-                    dynamic_clear <= start_dynamic + 0.004):
+                    dynamic_clear < start_dynamic - 0.003):
                 return None
 
             if self.grid is not None and self.pose is not None:
@@ -372,12 +500,18 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
                     return None
                 map_clearance = self.grid.clearance_m(*cell)
                 if (map_clearance < self.map_hard and
-                        map_clearance <= start_map_clearance + 0.004):
+                        map_clearance < start_map_clearance - 0.004):
                     return None
             if path_local:
                 path_error += self.nearest_distance(x, y, path_local)
 
-        goal_error = math.hypot(target_local[0] - x, target_local[1] - y)
+        target_distance = max(math.hypot(*target_local), 1e-6)
+        unit_x = target_local[0] / target_distance
+        unit_y = target_local[1] / target_distance
+        along = x * unit_x + y * unit_y
+        cross_track = abs(-unit_y * x + unit_x * y)
+        # Passing a short lookahead point is progress, not an overshoot error.
+        goal_error = max(0.0, target_distance - along) + cross_track
         avg_path_error = path_error / steps if path_local else goal_error
         wall_penalty = 0.0
         if min_wall < self.wall_preferred_gap:
@@ -400,6 +534,10 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
             self.score_lateral * abs(vy) +
             self.score_turn * abs(wz) + switch + stop -
             self.score_speed_reward * progress)
+        last_vx, last_wz = self.last_cmd
+        score += self.score_velocity_continuity * (
+            (vx - last_vx) ** 2 + (vy - self.last_vy) ** 2)
+        score += self.score_angular_continuity * (wz - last_wz) ** 2
         return score, side, min_wall, min_dynamic
 
     def compute_cmd(self, target):
@@ -454,9 +592,11 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         # must never poison the static graph or seal the robot's start cell.
         self.grid.clear_dynamic_blocks()
         self.planner.roadmaps.clear()
+        with self.dynamic_memory_lock:
+            memory_size = len(self.dynamic_memory)
         rospy.logwarn(
             "UNIVERSAL_STATIC_GLOBAL_RESET local_voxels=%d injected_cells=0",
-            len(self.dynamic_memory))
+            memory_size)
         return 0
 
     def apply_scan_guard(self, cmd):
@@ -500,32 +640,78 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         return limited
 
     def smooth_cmd(self, cmd):
-        smoothed = super(UniversalOmniNavigator, self).smooth_cmd(cmd)
-        dt = max(1.0 / max(self.control_rate_hz, 1.0), 0.02)
-        max_delta = self.lateral_accel * dt
-        self.local_vy = clamp(
-            self.local_vy, self.last_vy - max_delta, self.last_vy + max_delta)
+        now = rospy.Time.now()
+        # Planning or a busy callback must not turn elapsed wall time into a
+        # large acceleration allowance on the next command.
+        dt = clamp(
+            (now - self.last_control_time).to_sec(),
+            1.0 / max(self.control_rate_hz, 1.0), 0.15)
+        self.last_control_time = now
+        vx, wz = cmd
+        last_vx, last_wz = self.last_cmd
+        target_vy = self.local_vy
+
+        desired_ax = clamp(
+            (vx - last_vx) / dt, -self.linear_accel, self.linear_accel)
+        desired_ay = clamp(
+            (target_vy - self.last_vy) / dt,
+            -self.lateral_accel, self.lateral_accel)
+        desired_aw = clamp(
+            (wz - last_wz) / dt, -self.angular_accel, self.angular_accel)
+        self.accel_x = clamp(
+            desired_ax,
+            self.accel_x - self.linear_jerk * dt,
+            self.accel_x + self.linear_jerk * dt)
+        self.accel_y = clamp(
+            desired_ay,
+            self.accel_y - self.lateral_jerk * dt,
+            self.accel_y + self.lateral_jerk * dt)
+        self.accel_wz = clamp(
+            desired_aw,
+            self.accel_wz - self.angular_jerk * dt,
+            self.accel_wz + self.angular_jerk * dt)
+        vx = last_vx + self.accel_x * dt
+        self.local_vy = self.last_vy + self.accel_y * dt
+        wz = last_wz + self.accel_wz * dt
+
+        # A hard local guard must stop immediately; jerk limiting is only for
+        # normal tracking changes.  The downstream safety monitor remains an
+        # independent final veto.
+        if cmd[0] <= 1e-5:
+            vx = 0.0
+            self.accel_x = 0.0
+        if abs(target_vy) <= 1e-5:
+            self.local_vy = 0.0
+            self.accel_y = 0.0
+        vx = clamp(vx, 0.0, self.max_forward)
+        wz = clamp(wz, -self.max_local_angular, self.max_local_angular)
         self.local_vy = clamp(self.local_vy,
                               -self.max_lateral, self.max_lateral)
+        self.last_cmd = (vx, wz)
         self.last_vy = self.local_vy
-        return smoothed
+        return vx, wz
 
     def start_recovery(self):
-        # Prefer a laser-clear side step.  Rotation is used only when neither
-        # side has enough room; routine reverse motion is deliberately absent.
+        # Recovery is a short low-speed curve, never a fixed-angle in-place
+        # rotation.  The normal global path remains active afterwards.
         if self.left >= self.right and self.left > self.side_slow_m:
-            vy = self.recovery_lateral_speed
-            wz = -0.08
+            vx = 0.045
+            vy = self.recovery_lateral_speed * 0.75
+            wz = min(self.recovery_turn_speed, 0.14)
         elif self.right > self.side_slow_m:
-            vy = -self.recovery_lateral_speed
-            wz = 0.08
+            vx = 0.045
+            vy = -self.recovery_lateral_speed * 0.75
+            wz = -min(self.recovery_turn_speed, 0.14)
         else:
+            vx = 0.030
             vy = 0.0
-            wz = self.recovery_turn_speed if self.left >= self.right else -self.recovery_turn_speed
+            wz = (min(self.recovery_turn_speed, 0.12)
+                  if self.left >= self.right
+                  else -min(self.recovery_turn_speed, 0.12))
         if self.recovery_count % 2:
             vy = -vy
             wz = -wz
-        self.recovery_cmd = (0.0, vy, wz)
+        self.recovery_cmd = (vx, vy, wz)
         self.recovery_until = rospy.Time.now() + rospy.Duration(
             self.recovery_duration)
         self.recovery_replan_pending = True
@@ -550,18 +736,17 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         now = rospy.Time.now()
         if self.recovery_until > now and not self.finished:
             self.local_vy = self.recovery_cmd[1]
-            self.publish_cmd(self.recovery_cmd[0], self.recovery_cmd[2])
+            recovery_smoothed = self.smooth_cmd(
+                (self.recovery_cmd[0], self.recovery_cmd[2]))
+            self.publish_cmd(recovery_smoothed[0], recovery_smoothed[1])
             return
         if self.recovery_replan_pending and not self.finished:
             self.recovery_replan_pending = False
             self.local_vy = 0.0
             self.last_vy = 0.0
-            self.refresh_global_dynamic_map()
-            self.path_world = []
-            self.last_plan_time = rospy.Time(0)
-            self.plan_from_current_pose("post recovery", force=True)
+            # The static route is still valid.  Replanning the same route here
+            # creates a multi-second pause and does not improve local escape.
             self.last_progress_time = now
-            return
         if self.finished:
             self.publish_zero("FINISHED")
             return
@@ -594,6 +779,9 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
         cmd = self.apply_scan_guard(cmd)
         cmd = self.apply_goal_approach_limit(cmd)
         cmd = self.smooth_cmd(cmd)
+        rospy.logwarn_throttle(
+            0.6, "UNIVERSAL_SMOOTH_CMD x=%.3f y=%.3f wz=%.3f",
+            cmd[0], self.local_vy, cmd[1])
         self.publish_cmd(cmd[0], cmd[1])
 
     def publish_cmd(self, vx, wz):
@@ -609,6 +797,9 @@ class UniversalOmniNavigator(RosGlobalFirstGraphNavigator):
     def publish_zero(self, reason):
         self.local_vy = 0.0
         self.last_vy = 0.0
+        self.accel_x = 0.0
+        self.accel_y = 0.0
+        self.accel_wz = 0.0
         super(UniversalOmniNavigator, self).publish_zero(reason)
 
 

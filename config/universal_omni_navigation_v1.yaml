@@ -49,7 +49,7 @@ graph_max_neighbors: 20
 graph_start_goal_neighbors: 34
 graph_max_nodes: 4600
 
-control_rate_hz: 15.0
+control_rate_hz: 10.0
 lookahead_dist_m: 0.45
 max_linear_vel: 0.52
 min_tracking_speed: 0.09
@@ -77,13 +77,15 @@ blocked_replan_s: 1.0
 stuck_timeout_s: 3.8
 progress_dist_m: 0.045
 
-local_horizon_s: 1.25
-local_sim_dt_s: 0.10
+local_horizon_s: 1.08
+local_sim_dt_s: 0.12
 local_scan_range_m: 1.80
-local_scan_stride: 2
-dynamic_memory_ttl_s: 1.80
-dynamic_memory_voxel_m: 0.045
-static_scan_match_radius_m: 0.11
+local_scan_stride: 5
+dynamic_memory_ttl_s: 1.05
+dynamic_memory_voxel_m: 0.060
+dynamic_confirmations: 2
+dynamic_confirmation_window_s: 0.45
+static_scan_match_radius_m: 0.16
 
 local_max_forward_mps: 0.52
 local_max_lateral_mps: 0.22
@@ -109,7 +111,7 @@ local_block_replan_s: 0.90
 local_replan_interval_s: 1.10
 global_dynamic_point_inflation_m: 0.20
 universal_stuck_s: 3.8
-recovery_duration_s: 0.65
+recovery_duration_s: 0.55
 recovery_lateral_mps: 0.10
 recovery_turn_rps: 0.30
 
@@ -121,3 +123,8 @@ score_lateral: 0.18
 score_turn: 0.14
 score_side_switch: 0.35
 score_speed_reward: 0.90
+score_velocity_continuity: 5.0
+score_angular_continuity: 1.2
+linear_jerk_mps3: 2.2
+lateral_jerk_mps3: 2.0
+angular_jerk_rps3: 4.0

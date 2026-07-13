@@ -6,8 +6,8 @@ from universal_omni_navigation_v1 import UniversalOmniNavigator
 
 def make_node():
     node = UniversalOmniNavigator.__new__(UniversalOmniNavigator)
-    node.horizon_s = 1.25
-    node.sim_dt = 0.10
+    node.horizon_s = 1.08
+    node.sim_dt = 0.12
     node.wall_hard = 0.215
     node.wall_preferred = 0.255
     node.dynamic_hard = 0.225
@@ -26,6 +26,10 @@ def make_node():
     node.score_turn = 0.14
     node.score_switch = 0.35
     node.score_speed_reward = 0.90
+    node.score_velocity_continuity = 5.0
+    node.score_angular_continuity = 1.2
+    node.last_cmd = (0.0, 0.0)
+    node.last_vy = 0.0
     node.last_selected_side = 0
     node.grid = None
     node.pose = None

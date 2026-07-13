@@ -1,0 +1,141 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="waypoint_enabled" default="true" />
+  <arg name="waypoint_x" default="-0.33" />
+  <arg name="waypoint_y" default="-1.02" />
+
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="camera_width" default="1280" />
+  <arg name="camera_height" default="720" />
+  <arg name="camera_rate" default="15" />
+
+  <arg name="qr_target_count" default="3" />
+  <arg name="qr_scan_per_wall_s" default="2.8" />
+  <arg name="qr_first_wall_scan_s" default="6.0" />
+  <arg name="qr_settle_s" default="0.45" />
+  <arg name="qr_first_wall_settle_s" default="1.6" />
+  <arg name="qr_process_rate_hz" default="12.0" />
+  <arg name="qr_angular_speed" default="0.52" />
+  <arg name="qr_fetch_url" default="true" />
+  <arg name="qr_fetch_timeout_s" default="6.0" />
+  <arg name="qr_fetch_retries" default="3" />
+  <arg name="qr_fetch_retry_delay_s" default="0.4" />
+  <arg name="qr_item_topic" default="/qr_room_scan_item" />
+  <arg name="qr_control_topic" default="/qr_room_scan_control" />
+  <arg name="qr_after_item_decision_wait_s" default="0.0" />
+  <arg name="qr_micro_sweep_deg" default="16.0" />
+  <arg name="qr_first_wall_micro_sweep_deg" default="28.0" />
+  <arg name="qr_first_wall_micro_sweep_scan_s" default="2.0" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node if="$(arg start_camera)"
+        name="ucar_camera" pkg="ucar_camera" type="ucar_camera.py"
+        output="screen" respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="$(arg camera_topic)" />
+    <param name="device_path" value="$(arg camera_device)" />
+    <param name="image_width" value="$(arg camera_width)" />
+    <param name="image_height" value="$(arg camera_height)" />
+    <param name="rate" value="$(arg camera_rate)" />
+  </node>
+
+  <node if="$(arg start_map)"
+        name="map_server" pkg="map_server" type="map_server"
+        args="$(arg map_yaml)" output="screen" respawn="true">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <include if="$(arg start_amcl)"
+           file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <node if="$(arg start_safety_monitor)"
+        pkg="iden_controller" type="two_stage_profile_safety_v1.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="parking_passthrough" value="false" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_stop_m" value="0.21" />
+    <param name="front_slow_m" value="0.36" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_stop_m" value="0.15" />
+    <param name="side_slow_m" value="0.235" />
+    <param name="nav_max_forward_mps" value="0.60" />
+    <param name="nav_max_lateral_mps" value="0.0" />
+    <param name="nav_max_angular_rps" value="0.84" />
+    <param name="indoor_trigger_y" value="-1.75" />
+  </node>
+
+  <node pkg="iden_controller" type="front_first_two_stage_route_test_v1.py"
+        name="global_first_graph_nav" output="screen"
+        respawn="false">
+    <rosparam file="$(find iden_controller)/config/front_first_smooth_navigation_v1.yaml"
+              command="load" />
+    <rosparam subst_value="true">
+route_points:
+  - {name: qr_room_center, x: $(arg goal_x), y: $(arg goal_y), yaw: $(arg goal_yaw), tolerance: 0.10, require_yaw: false}
+route_hold_s: 0.08
+route_final_hold_s: 0.45
+route_yaw_tolerance_deg: 9.0
+route_yaw_speed_rps: 0.28
+room_profile_trigger_y: -1.75
+room_dynamic_replan_enabled: false
+doorway_cruise_mps: 0.30
+doorway_max_lateral_mps: 0.035
+    </rosparam>
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="waypoint_enabled" value="$(arg waypoint_enabled)" />
+    <param name="waypoint_x" value="$(arg waypoint_x)" />
+    <param name="waypoint_y" value="$(arg waypoint_y)" />
+  </node>
+
+  <node pkg="iden_controller" type="global_first_nav_qr_room_scan_wall_align_v1.py"
+        name="global_first_nav_qr_room_scan" output="screen">
+    <param name="nav_status_topic" value="/global_first_graph_nav/status" />
+    <param name="nav_node_name" value="/global_first_graph_nav" />
+    <param name="goal_status_substring" value="route complete" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="odom_topic" value="/odom" />
+    <param name="scan_topic" value="/scan" />
+    <param name="target_qr_count" value="$(arg qr_target_count)" />
+    <param name="item_topic" value="$(arg qr_item_topic)" />
+    <param name="control_topic" value="$(arg qr_control_topic)" />
+    <param name="after_item_decision_wait_s" value="$(arg qr_after_item_decision_wait_s)" />
+    <param name="scan_per_wall_s" value="$(arg qr_scan_per_wall_s)" />
+    <param name="first_wall_scan_s" value="$(arg qr_first_wall_scan_s)" />
+    <param name="settle_s" value="$(arg qr_settle_s)" />
+    <param name="first_wall_settle_s" value="$(arg qr_first_wall_settle_s)" />
+    <param name="process_rate_hz" value="$(arg qr_process_rate_hz)" />
+    <param name="angular_speed" value="$(arg qr_angular_speed)" />
+    <param name="fetch_url" value="$(arg qr_fetch_url)" />
+    <param name="fetch_timeout_s" value="$(arg qr_fetch_timeout_s)" />
+    <param name="fetch_retries" value="$(arg qr_fetch_retries)" />
+    <param name="fetch_retry_delay_s" value="$(arg qr_fetch_retry_delay_s)" />
+    <param name="micro_sweep_deg" value="$(arg qr_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_deg" value="$(arg qr_first_wall_micro_sweep_deg)" />
+    <param name="first_wall_micro_sweep_scan_s" value="$(arg qr_first_wall_micro_sweep_scan_s)" />
+    <param name="qr_wall_sector_deg" value="62.0" />
+    <param name="qr_wall_tolerance_deg" value="2.8" />
+    <param name="qr_center_tolerance_px" value="24.0" />
+    <param name="qr_lateral_limit_m" value="0.20" />
+    <param name="qr_side_hard_m" value="0.17" />
+  </node>
+</launch>
