@@ -1,0 +1,23 @@
+# Room-only oriented rectangular swept-footprint guard.
+rect_sweep_guard_enabled: true
+dynamic_exclusion_radius_m: 0.26
+rect_robot_half_length_m: 0.171
+rect_robot_half_width_m: 0.128
+rect_footprint_margin_m: 0.015
+
+# 0.80 s covers about 38 degrees at the configured 0.82 rad/s maximum turn.
+# The check is repeated on every command, so a longer turn is protected
+# continuously without treating the robot as a permanent circle.
+rect_guard_horizon_s: 0.80
+rect_guard_sim_dt_s: 0.05
+rect_guard_scan_range_m: 0.90
+rect_guard_scan_stride: 2
+rect_guard_scan_timeout_s: 0.45
+rect_guard_min_turn_rate_rps: 0.08
+rect_guard_worsen_allowance_m: 0.003
+rect_guard_log_period_s: 0.35
+
+# The guard only scales the requested forward speed and same-direction turn.
+# It cannot reverse, turn the other way, or introduce lateral motion.
+rect_guard_turn_scales: [1.0, 0.75, 0.50, 0.25, 0.0]
+rect_guard_speed_scales: [1.0, 0.75, 0.50, 0.25, 0.0]

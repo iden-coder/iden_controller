@@ -1,0 +1,43 @@
+# Second-stage-only recovery. The first navigation process never sends reverse.
+room_recovery_trigger_s: 3.4
+room_recovery_back_speed_mps: 0.060
+room_recovery_back_distance_m: 0.11
+room_recovery_timeout_s: 2.8
+room_recovery_rear_clear_m: 0.31
+room_recovery_track_near_m: 0.46
+room_recovery_progress_m: 0.035
+room_recovery_cooldown_s: 2.5
+
+# Faster wall-normal parking while retaining lidar hard limits.
+center_heading_tolerance_deg: 2.8
+center_heading_kp: 1.55
+center_heading_min_wz: 0.14
+center_heading_stuck_wz: 0.18
+center_heading_max_wz: 0.30
+center_heading_timeout_s: 11.0
+center_heading_stable_frames: 2
+
+center_sign_tolerance_px: 16.0
+center_sign_stable_frames: 2
+center_lateral_kp: 0.42
+center_lateral_min_speed: 0.035
+center_lateral_near_min_speed: 0.018
+center_lateral_near_band_px: 48.0
+center_lateral_max_speed: 0.12
+center_lateral_timeout_s: 13.0
+center_lateral_hard_clearance_m: 0.075
+center_lateral_slow_clearance_m: 0.22
+center_obstacle_wait_timeout_s: 0.8
+
+center_precenter_clearance_m: 0.22
+center_precenter_retreat_distance_m: 0.16
+center_precenter_retreat_speed_mps: 0.070
+center_precenter_retreat_timeout_s: 4.5
+center_precenter_rear_clearance_m: 0.11
+center_quick_handoff_settle_s: 0.25
+
+center_approach_fast_speed: 0.15
+center_approach_slow_speed: 0.035
+center_approach_slow_error_m: 0.09
+center_approach_timeout_s: 16.0
+center_final_stable_frames: 3

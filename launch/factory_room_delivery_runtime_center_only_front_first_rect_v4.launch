@@ -1,0 +1,70 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="start_safety_monitor" default="true" />
+  <arg name="room_cmd_topic" default="/factory_room/cmd_vel_request" />
+
+  <node if="$(arg start_safety_monitor)" pkg="iden_controller"
+        type="global_first_safety_monitor_parking_v11.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml" command="load" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="true" />
+    <param name="normal_max_lateral_speed" value="0.06" />
+    <param name="parking_lateral_travel_limit_m" value="0.48" />
+    <param name="parking_side_hard_m" value="0.075" />
+    <param name="parking_max_lateral_speed" value="0.12" />
+    <param name="parking_max_reverse_speed" value="0.07" />
+    <param name="parking_retreat_rear_clear_m" value="0.28" />
+    <param name="parking_retreat_max_wz" value="0.035" />
+    <param name="room_recovery_reverse_max_mps" value="0.06" />
+    <param name="room_recovery_rear_clear_m" value="0.31" />
+  </node>
+
+  <include file="$(find iden_controller)/launch/factory_room_front_first_stable_action_v4.launch">
+    <arg name="map_yaml" value="$(arg map_yaml)" />
+    <arg name="cmd_vel_request_topic" value="$(arg room_cmd_topic)" />
+  </include>
+
+  <node pkg="iden_controller" type="factory_room_rect_sweep_command_guard_v3.py"
+        name="factory_room_rect_sweep_command_guard" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_front_first_stable_rect_v2.yaml" command="load" />
+    <param name="request_topic" value="$(arg room_cmd_topic)" />
+    <param name="output_topic" value="/cmd_vel_raw" />
+    <param name="scan_topic" value="/scan" />
+    <param name="pose_topic" value="/amcl_pose" />
+    <param name="parking_mode_topic" value="/factory/parking_close_mode" />
+  </node>
+
+  <node pkg="iden_controller" type="run_factory_room_ocr_ros.sh"
+        name="factory_room_ocr" output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="4.0" />
+    <param name="vote_window" value="10" />
+    <param name="vote_need" value="5" />
+    <param name="enabled_on_start" value="false" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_delivery_manager_center_only_v4.py"
+        name="factory_room_delivery_manager" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_mission_parking_v7.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v1.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v2.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_delivery_robust_v2.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_recovery_fast_parking_v3.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_nearby_view_cone_merge_v4.yaml" command="load" />
+    <param name="task_result_topic" value="/factory/subtask1_result" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="scan_topic" value="/scan" />
+    <param name="pose_topic" value="/amcl_pose" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="$(arg room_cmd_topic)" />
+    <param name="parking_close_mode_topic" value="/factory/parking_close_mode" />
+    <param name="move_base_action" value="/factory_room/move_base" />
+    <param name="clear_costmaps_service" value="/factory_room/move_base/clear_costmaps" />
+  </node>
+</launch>

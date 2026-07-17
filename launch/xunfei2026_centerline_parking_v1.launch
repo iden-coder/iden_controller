@@ -1,0 +1,49 @@
+<launch>
+  <arg name="target_label" default="" />
+
+  <!-- Base, lidar, camera and OCR are already alive.  No white-frame detector
+       and no external cmd_vel safety filter are started in close-wall mode. -->
+  <node pkg="iden_controller" type="factory_sign_center_only_parking_test_v1.py"
+        name="xunfei2026_centerline_parking" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_sign_center_only_parking_test_v1.yaml"
+              command="load" />
+    <param name="target_label" value="$(arg target_label)" />
+    <param name="ocr_topic" value="/factory_room/ocr_result" />
+    <param name="scan_topic" value="/scan" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel" />
+    <param name="parking_mode_topic" value="/factory/parking_close_mode" />
+    <param name="state_topic" value="/factory/sign_center_parking_state" />
+    <param name="start_delay_s" value="0.15" />
+    <param name="input_wait_timeout_s" value="7.0" />
+    <param name="laser_offset_x_m" value="-0.11" />
+    <!-- The manager pre-orients toward the projected target wall.  These
+         thresholds only make initial wall acquisition tolerant of sparse lidar;
+         final heading and 11 cm nose-gap tolerances remain unchanged. -->
+    <param name="wall_sector_deg" value="55.0" />
+    <param name="wall_inlier_m" value="0.040" />
+    <param name="wall_min_inliers" value="12" />
+    <param name="wall_min_span_m" value="0.20" />
+    <param name="heading_abort_deg" value="32.0" />
+    <param name="heading_tolerance_deg" value="2.8" />
+    <param name="heading_max_wz" value="0.28" />
+    <param name="heading_timeout_s" value="11.0" />
+    <param name="heading_stable_frames" value="2" />
+    <param name="sign_center_tolerance_px" value="20.0" />
+    <param name="sign_stable_frames" value="3" />
+    <param name="near_center_min_speed" value="0.018" />
+    <param name="lateral_max_speed" value="0.11" />
+    <param name="lateral_timeout_s" value="18.0" />
+    <param name="lateral_hard_clearance_m" value="0.085" />
+    <param name="lateral_slow_clearance_m" value="0.24" />
+    <param name="obstacle_wait_timeout_s" value="1.2" />
+    <param name="final_wall_distance_m" value="0.171" />
+    <param name="final_wall_tolerance_m" value="0.006" />
+    <param name="final_fail_tolerance_m" value="0.018" />
+    <param name="approach_fast_speed" value="0.14" />
+    <param name="approach_slow_speed" value="0.035" />
+    <param name="approach_slow_error_m" value="0.10" />
+    <param name="approach_timeout_s" value="18.0" />
+    <param name="final_stable_frames" value="3" />
+  </node>
+</launch>

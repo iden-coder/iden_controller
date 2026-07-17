@@ -151,6 +151,12 @@ class Subtask1RealOrderFusion(object):
             "~rearm_asr_on_incomplete_voice", True))
         self.asr_node_name = rospy.get_param("~asr_node_name", "/cloud_asr_test2")
         self.asr_rearm_delay_s = float(rospy.get_param("~asr_rearm_delay_s", 3.0))
+        self.asr_tts_start_timeout_s = float(rospy.get_param(
+            "~asr_tts_start_timeout_s", max(6.0, self.asr_rearm_delay_s)))
+        self.asr_tts_finish_timeout_s = float(rospy.get_param(
+            "~asr_tts_finish_timeout_s", 20.0))
+        self.asr_respawn_timeout_s = float(rospy.get_param(
+            "~asr_respawn_timeout_s", 8.0))
         self.default_voice_text = rospy.get_param("~default_voice_text", "")
         self.nav_launch_pkg = rospy.get_param("~nav_launch_pkg", "iden_controller")
         self.nav_launch_file = rospy.get_param(
@@ -187,6 +193,8 @@ class Subtask1RealOrderFusion(object):
         self.spark_timeout_s = float(rospy.get_param("~spark_timeout_s", 18.0))
 
         self.lock = threading.Lock()
+        self.asr_rearm_lock = threading.Lock()
+        self.asr_rearm_in_progress = False
         self.voice_text = ""
         self.target_category = ""
         self.qr_items = []
@@ -333,17 +341,94 @@ class Subtask1RealOrderFusion(object):
     def rearm_asr_if_needed(self):
         if not self.rearm_asr_on_incomplete_voice:
             return
+        with self.asr_rearm_lock:
+            if self.asr_rearm_in_progress:
+                rospy.logwarn("ASR rearm already in progress; duplicate request ignored")
+                return
+            self.asr_rearm_in_progress = True
         threading.Thread(target=self.rearm_asr_thread, daemon=True).start()
 
-    def rearm_asr_thread(self):
-        rospy.sleep(max(0.1, self.asr_rearm_delay_s))
-        if rospy.is_shutdown():
-            return
-        rospy.logwarn("rearming ASR node after incomplete voice command")
+    @staticmethod
+    def tts_process_active():
+        """Return true while the shared ASR node is synthesizing or playing TTS."""
         try:
+            for entry in os.listdir("/proc"):
+                if not entry.isdigit():
+                    continue
+                try:
+                    with open("/proc/{}/cmdline".format(entry), "rb") as handle:
+                        command = handle.read().replace(b"\x00", b" ")
+                except (IOError, OSError):
+                    continue
+                if b"xf_tts_stable.py" in command:
+                    return True
+                if b"aplay" in command and b"tts_result.pcm" in command:
+                    return True
+        except (IOError, OSError):
+            return False
+        return False
+
+    def wait_for_prompt_playback(self):
+        start = time.time()
+        finish_deadline = start + max(
+            self.asr_tts_start_timeout_s, self.asr_tts_finish_timeout_s)
+        seen_tts = False
+        quiet_since = None
+
+        rospy.loginfo("ASR_REARM_WAIT_TTS waiting for spoken prompt to finish")
+        while not rospy.is_shutdown() and time.time() < finish_deadline:
+            now = time.time()
+            active = self.tts_process_active()
+            if active:
+                seen_tts = True
+                quiet_since = None
+            elif seen_tts:
+                if quiet_since is None:
+                    quiet_since = now
+                elif now - quiet_since >= 0.45:
+                    rospy.loginfo("ASR_REARM_TTS_FINISHED prompt playback completed")
+                    return
+            elif now - start >= self.asr_tts_start_timeout_s:
+                rospy.logwarn(
+                    "ASR_REARM_TTS_NOT_SEEN after %.1fs; recovering ASR anyway",
+                    now - start)
+                return
+            rospy.sleep(0.1)
+
+        rospy.logwarn(
+            "ASR_REARM_TTS_TIMEOUT after %.1fs; recovering ASR",
+            time.time() - start)
+
+    def wait_for_asr_respawn(self):
+        deadline = time.time() + max(1.0, self.asr_respawn_timeout_s)
+        while not rospy.is_shutdown() and time.time() < deadline:
+            try:
+                output = subprocess.check_output(
+                    ["rosnode", "list"], universal_newlines=True)
+                if self.asr_node_name in output.splitlines():
+                    rospy.loginfo(
+                        "ASR_REARM_READY %s; please state the target category",
+                        self.asr_node_name)
+                    return True
+            except Exception:
+                pass
+            rospy.sleep(0.2)
+        rospy.logwarn("ASR_REARM_RESPAWN_TIMEOUT node=%s", self.asr_node_name)
+        return False
+
+    def rearm_asr_thread(self):
+        try:
+            self.wait_for_prompt_playback()
+            if rospy.is_shutdown():
+                return
+            rospy.logwarn("rearming ASR node after spoken prompt")
             subprocess.call(["rosnode", "kill", self.asr_node_name])
+            self.wait_for_asr_respawn()
         except Exception as exc:
             rospy.logwarn("failed to rearm ASR node %s: %s", self.asr_node_name, exc)
+        finally:
+            with self.asr_rearm_lock:
+                self.asr_rearm_in_progress = False
 
     def qr_summary_callback(self, msg):
         summary = first_json_object(msg.data)

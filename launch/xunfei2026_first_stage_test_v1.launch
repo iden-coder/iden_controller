@@ -1,0 +1,63 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_rviz" default="false" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node name="map_server" pkg="map_server" type="map_server"
+        args="$(arg map_yaml)" output="screen" required="true">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <node name="amcl" pkg="amcl" type="amcl" output="screen" required="true">
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_amcl_v1.yaml" />
+  </node>
+
+  <node name="move_base" pkg="move_base" type="move_base"
+        output="screen" required="true">
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" />
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <rosparam command="load" ns="global_costmap"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_costmap_common_v1.yaml" />
+    <rosparam command="load" ns="local_costmap"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_costmap_common_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_global_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_local_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_move_base_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_global_planner_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_teb_v1.yaml" />
+  </node>
+
+  <node name="xunfei2026_first_stage_goal" pkg="iden_controller"
+        type="xunfei2026_first_stage_goal_v1.py" output="screen" required="true">
+    <param name="goal_x" value="$(arg goal_x)" />
+    <param name="goal_y" value="$(arg goal_y)" />
+    <param name="goal_yaw" value="$(arg goal_yaw)" />
+    <param name="initial_x" value="0.0" />
+    <param name="initial_y" value="0.0" />
+    <param name="initial_yaw" value="0.0" />
+    <param name="initial_pose_publish_s" value="3.0" />
+    <param name="localization_timeout_s" value="18.0" />
+    <param name="server_timeout_s" value="25.0" />
+    <param name="goal_timeout_s" value="120.0" />
+    <param name="start_delay_s" value="2.0" />
+  </node>
+
+  <group if="$(arg start_rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" />
+  </group>
+</launch>

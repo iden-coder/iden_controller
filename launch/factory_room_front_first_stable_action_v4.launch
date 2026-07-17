@@ -1,0 +1,22 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="cmd_vel_request_topic" default="/factory_room/cmd_vel_request" />
+
+  <node pkg="iden_controller" type="factory_room_front_first_stable_action_v4.py"
+        name="factory_room_global_first_bridge" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/global_first_graph_nav_2249fcf.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/front_first_smooth_navigation_v1.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_front_first_stable_rect_v2.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_recovery_fast_parking_v3.yaml" command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_nearby_view_cone_merge_v4.yaml" command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="cmd_vel_topic" value="$(arg cmd_vel_request_topic)" />
+    <param name="action_name" value="/factory_room/move_base" />
+    <param name="clear_service_name" value="/factory_room/move_base/clear_costmaps" />
+    <param name="publish_initial_pose_on_start" value="false" />
+    <param name="require_start_near_initial" value="false" />
+    <param name="waypoint_enabled" value="false" />
+    <param name="require_goal_yaw" value="true" />
+  </node>
+</launch>

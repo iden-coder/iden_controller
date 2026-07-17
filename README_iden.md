@@ -14,6 +14,8 @@ roslaunch iden_controller cruise_navfn_success2.launch
  rosrun iden_controller process_navfn_success2.py
 
 # 目前最好的第一部分导航
+~/instant_ws/src/iden_controller/scripts/start_xunfei2026_first_stage_test_v1.sh
+
 roslaunch iden_controller global_first_graph_nav.launch
 
 # 第一部分仅导航加扫码
@@ -21,6 +23,7 @@ roslaunch iden_controller global_first_graph_nav_qr_room.launch
 
 # 第一部分所有
 roslaunch iden_controller subtask1_real_factory.launch
+~/instant_ws/src/iden_controller/scripts/start_subtask1_xunfei2026_voice_nav_qr_llm_v1.sh
 
 # 有大模型的第一部分所有
 ~/instant_ws/src/iden_controller/scripts/start_subtask1_real_factory_route.sh
@@ -39,3 +42,6 @@ roslaunch iden_controller factory_ocr_from_package.launch
 
 # 测试停止在白框里的能力（融合法）
 ~/instant_ws/src/iden_controller/scripts/start_factory_sign_center_parking_test_v4.sh
+
+# 导航全测试
+~/instant_ws/src/iden_controller/scripts/start_fixed_point_continuous_ocr_sweep_route_test_v2.sh

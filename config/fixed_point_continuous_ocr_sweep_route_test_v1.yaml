@@ -1,0 +1,63 @@
+# Full route retained so this test also verifies the transition into the room.
+route_points:
+  - {name: first_stage, x: -1.48, y: -0.45, yaw: 3.1415926536, tolerance: 0.10, require_yaw: false}
+  - {name: doorway_approach, x: -0.85, y: -1.41, yaw: -1.5707963268, tolerance: 0.16, require_yaw: false}
+  - {name: room_entry, x: -0.85, y: -1.90, yaw: -1.5707963268, tolerance: 0.20, require_yaw: false}
+  - {name: d1, x: -1.43, y: -2.57, yaw: 1.5707963268, tolerance: 0.15, require_yaw: false}
+  - {name: d2, x: 0.41, y: -2.00, yaw: 2.3561944902, tolerance: 0.15, require_yaw: false}
+  - {name: d3, x: 2.04, y: -2.51, yaw: -2.3561944902, tolerance: 0.15, require_yaw: false}
+
+dynamic_activation_route_point: d1
+# Requested reduction: temporary cone centre exclusion is 25 cm, down 1 cm.
+dynamic_exclusion_radius_m: 0.25
+dynamic_path_trigger_radius_m: 0.25
+dynamic_candidate_path_gate_m: 0.33
+dynamic_confirmed_ttl_s: 120.0
+dynamic_stage_max_lateral_mps: 0.0
+
+# Angles are absolute map-frame headings. Positive travel is counterclockwise.
+# d1: +Y -> west -> -Y -> southeast (225 deg CCW).
+# d2: northwest -> +Y -> northeast (90 deg CW).
+# d3: southwest -> -Y -> +X -> +Y (225 deg CCW).
+continuous_scan_specs:
+  - {name: d1, start_deg: 90.0, direction: ccw, travel_deg: 225.0}
+  - {name: d2, start_deg: 135.0, direction: cw, travel_deg: 90.0}
+  - {name: d3, start_deg: 225.0, direction: ccw, travel_deg: 225.0}
+
+continuous_scan_max_speed_rps: 0.14
+continuous_scan_min_speed_rps: 0.045
+continuous_scan_acceleration_rps2: 0.28
+continuous_scan_start_tolerance_deg: 2.0
+continuous_scan_end_tolerance_deg: 1.5
+continuous_scan_stable_frames: 3
+continuous_scan_stall_timeout_s: 3.2
+continuous_scan_point_timeout_s: 42.0
+continuous_scan_replan_failures: 2
+
+# A fallback candidate must be reachable and allow the real rectangular body
+# to sweep through the scan arc. Candidates remain near the nominal point.
+continuous_scan_spin_min_gap_m: 0.015
+continuous_scan_static_margin_m: 0.020
+continuous_scan_dynamic_margin_m: 0.015
+continuous_scan_candidate_offsets_m:
+  - [0.00, 0.12]
+  - [0.00, -0.12]
+  - [0.12, 0.00]
+  - [-0.12, 0.00]
+  - [0.12, 0.12]
+  - [-0.12, 0.12]
+  - [0.12, -0.12]
+  - [-0.12, -0.12]
+  - [0.00, 0.24]
+  - [0.00, -0.24]
+  - [0.24, 0.00]
+  - [-0.24, 0.00]
+  - [0.18, 0.18]
+  - [-0.18, 0.18]
+  - [0.18, -0.18]
+  - [-0.18, -0.18]
+
+ocr_control_topic: /factory_room/ocr_control
+ocr_result_topic: /factory_room/ocr_result
+route_final_hold_s: 0.8
+

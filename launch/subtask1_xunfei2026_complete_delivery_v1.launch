@@ -1,0 +1,189 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="qr_angular_speed" default="0.22" />
+  <arg name="qr_decode_rate_hz" default="15.0" />
+  <arg name="use_spark" default="true" />
+  <arg name="spark_api_key" default="$(optenv SPARK_API_KEY)" />
+  <arg name="spark_api_secret" default="$(optenv SPARK_API_SECRET)" />
+
+  <node pkg="speech_command" type="cloud_asr_test2"
+        name="cloud_asr_test2" output="screen"
+        respawn="true" respawn_delay="0.8" />
+
+  <node pkg="iden_controller" type="subtask1_real_order_fusion_route.py"
+        name="subtask1_xunfei2026_complete_fusion" output="screen">
+    <param name="voice_topic" value="/factory/voice_raw_text" />
+    <param name="qr_summary_topic" value="/qr_room_scan_results" />
+    <param name="qr_item_topic" value="/qr_room_scan_item" />
+    <param name="qr_scan_control_topic" value="/qr_room_scan_control" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="result_topic" value="/factory/subtask1_result" />
+    <param name="compat_target_topic" value="/factory/target_warehouses" />
+    <param name="state_topic" value="/factory/task_state" />
+    <param name="required_item_count" value="3" />
+    <param name="streaming_qr_decision" value="false" />
+    <param name="require_wake_before_order" value="true" />
+    <param name="require_target_category" value="true" />
+    <param name="rearm_asr_on_incomplete_voice" value="true" />
+    <param name="asr_node_name" value="/cloud_asr_test2" />
+    <param name="asr_rearm_delay_s" value="3.0" />
+    <param name="asr_tts_start_timeout_s" value="7.0" />
+    <param name="asr_tts_finish_timeout_s" value="20.0" />
+    <param name="asr_respawn_timeout_s" value="8.0" />
+    <param name="auto_start_nav" value="false" />
+    <param name="default_voice_text" value="" />
+    <param name="nav_launch_pkg" value="iden_controller" />
+    <param name="nav_launch_file" value="xunfei2026_first_stage_persistent_v2.launch" />
+    <param name="nav_roslaunch_args"
+           value="map_yaml:=$(arg map_yaml) goal_x:=$(arg goal_x) goal_y:=$(arg goal_y) goal_yaw:=$(arg goal_yaw) start_base:=$(arg start_base) start_lidar:=$(arg start_lidar) start_camera:=$(arg start_camera) qr_angular_speed:=$(arg qr_angular_speed) qr_decode_rate_hz:=$(arg qr_decode_rate_hz)" />
+    <param name="nav_start_delay_s" value="0.5" />
+    <param name="use_spark" value="$(arg use_spark)" />
+    <param name="require_spark_decision" value="true" />
+    <param name="spark_api_key" value="$(arg spark_api_key)" />
+    <param name="spark_api_secret" value="$(arg spark_api_secret)" />
+    <param name="spark_timeout_s" value="18.0" />
+    <param name="post_route_enabled" value="false" />
+  </node>
+
+  <node pkg="iden_controller" type="xunfei2026_room_delivery_manager_v1.py"
+        name="xunfei2026_room_delivery_manager" output="screen" required="true">
+    <param name="result_topic" value="/factory/subtask1_result" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="ocr_topic" value="/factory_room/ocr_result" />
+    <param name="ocr_control_topic" value="/factory_room/ocr_control" />
+    <param name="ocr_health_topic" value="/factory_room/ocr_health" />
+    <param name="ocr_ready_timeout_s" value="12.0" />
+    <param name="ocr_max_restarts" value="2" />
+    <param name="cone_control_topic" value="/factory_room/navigation_active" />
+    <param name="wait_after_tts_s" value="1.0" />
+    <!-- OCR loads while the first-stage navigator enters the room.  Reusing
+         that already-running move_base removes the long stationary handoff. -->
+    <param name="reuse_first_stage_move_base" value="true" />
+    <!-- Keep the proven first-stage planner until the chassis is fully beyond
+         the doorway; the room profile uses the same lightweight navigation
+         architecture with local lidar obstacle updates. -->
+    <param name="entry_approach_x" value="-0.85" />
+    <param name="entry_approach_y" value="-1.41" />
+    <param name="entry_x" value="-0.85" />
+    <param name="entry_y" value="-1.90" />
+    <param name="entry_yaw" value="-1.5707963" />
+    <param name="entry_trigger_y" value="-1.75" />
+    <param name="entry_goal_timeout_s" value="42.0" />
+    <param name="required_ocr_votes" value="8" />
+    <param name="candidate_ocr_votes" value="5" />
+    <param name="target_confirm_frames" value="3" />
+    <param name="target_edge_margin_ratio" value="0.05" />
+    <param name="non_target_release_distance_m" value="0.24" />
+    <param name="non_target_hard_release_distance_m" value="0.52" />
+    <param name="non_target_release_yaw_deg" value="16.0" />
+    <param name="non_target_hard_release_yaw_deg" value="35.0" />
+    <param name="non_target_blank_s" value="0.45" />
+    <param name="candidate_hold_s" value="1.8" />
+    <param name="candidate_cooldown_s" value="1.5" />
+    <param name="goal_timeout_s" value="55.0" />
+    <param name="scan_timeout_s" value="24.0" />
+    <param name="odom_topic" value="/odom" />
+    <param name="scan_topic" value="/scan" />
+    <param name="sweep_angular_speed" value="0.35" />
+    <param name="sweep_min_angular_speed" value="0.13" />
+    <param name="sweep_slow_angle_deg" value="24.0" />
+    <param name="sweep_tolerance_deg" value="3.0" />
+    <param name="sweep_settle_s" value="1.0" />
+    <param name="sweep_direction" value="-1.0" />
+    <param name="sweep_rotation_clearance_m" value="0.008" />
+    <param name="sweep_slow_clearance_m" value="0.06" />
+    <param name="sweep_block_timeout_s" value="1.2" />
+    <param name="prepark_align_timeout_s" value="10.0" />
+    <param name="prepark_center_tolerance_px" value="24.0" />
+    <param name="prepark_center_stable_frames" value="2" />
+    <param name="prepark_heading_kp" value="1.4" />
+    <param name="prepark_min_wz" value="0.10" />
+    <param name="prepark_max_wz" value="0.28" />
+    <param name="stuck_timeout_s" value="6.0" />
+    <param name="goal_retries" value="2" />
+    <!-- These points describe inspection order and approximate segment lengths.
+         Lidar wall fitting, not exact waypoint convergence, controls the car. -->
+    <param name="wall_b1_x" value="-0.43" />
+    <param name="wall_b1_y" value="-2.54" />
+    <param name="wall_a3_x" value="-1.43" />
+    <param name="wall_a3_y" value="-2.54" />
+    <param name="wall_a4_x" value="-1.43" />
+    <param name="wall_a4_y" value="-2.04" />
+    <param name="wall_a1_x" value="2.04" />
+    <param name="wall_a1_y" value="-2.04" />
+    <param name="wall_a2_x" value="2.04" />
+    <param name="wall_a2_y" value="-2.54" />
+    <param name="wall_b2_x" value="1.04" />
+    <param name="wall_b2_y" value="-2.54" />
+    <param name="wall_route_speed_mps" value="0.14" />
+    <param name="wall_route_min_speed_mps" value="0.055" />
+    <param name="wall_route_max_vx_mps" value="0.10" />
+    <param name="wall_route_max_wz_rps" value="0.30" />
+    <!-- Same acceleration envelope as the smooth first-stage TEB planner. -->
+    <param name="wall_direct_accel_x_mps2" value="0.50" />
+    <param name="wall_direct_accel_y_mps2" value="0.50" />
+    <param name="wall_direct_accel_wz_rps2" value="1.30" />
+    <param name="wall_direct_smooth_stop_s" value="0.35" />
+    <param name="wall_distance_kp" value="0.72" />
+    <param name="wall_heading_kp" value="1.15" />
+    <param name="wall_nominal_yaw_kp" value="0.45" />
+    <param name="wall_target_default_m" value="0.75" />
+    <param name="wall_target_min_m" value="0.36" />
+    <param name="wall_target_max_m" value="0.98" />
+    <param name="wall_fit_half_angle_deg" value="38.0" />
+    <param name="wall_fit_max_range_m" value="1.35" />
+    <param name="wall_fit_inlier_m" value="0.13" />
+    <param name="wall_fit_min_points" value="9" />
+    <param name="wall_sensor_lost_s" value="2.0" />
+    <param name="wall_segment_end_tolerance_m" value="0.10" />
+    <param name="wall_segment_timeout_scale" value="3.2" />
+    <param name="wall_corner_early_ratio" value="0.50" />
+    <param name="wall_corner_side_distance_m" value="0.30" />
+    <param name="wall_corner_span_deg" value="28.0" />
+    <param name="wall_corner_turn_tolerance_deg" value="4.0" />
+    <param name="wall_corner_turn_min_wz_rps" value="0.12" />
+    <param name="wall_corner_turn_max_wz_rps" value="0.34" />
+    <param name="wall_corner_rotation_clearance_m" value="0.010" />
+    <param name="wall_cone_side_slow_m" value="0.27" />
+    <param name="wall_cone_side_stop_m" value="0.19" />
+    <param name="wall_cone_side_hard_m" value="0.145" />
+    <param name="wall_cone_avoid_max_vx_mps" value="0.040" />
+    <param name="wall_reverse_hard_gap_m" value="0.040" />
+    <param name="wall_reverse_slow_gap_m" value="0.120" />
+    <param name="wall_side_body_hard_gap_m" value="0.025" />
+    <param name="wall_side_body_slow_gap_m" value="0.080" />
+    <param name="wall_side_escape_speed_mps" value="0.045" />
+    <param name="parking_wall_tolerance_m" value="0.012" />
+    <param name="parking_center_filter_alpha" value="0.45" />
+    <param name="parking_center_max_step_px" value="70.0" />
+    <param name="parking_approach_max_vy_mps" value="0.060" />
+    <param name="parking_lateral_hard_clearance_m" value="0.18" />
+    <param name="parking_lateral_slow_clearance_m" value="0.29" />
+    <!-- Rectangular-footprint guard catches cones beside the rear corners,
+         which are outside the old +/-90 degree side sectors. -->
+    <param name="parking_corner_hard_gap_m" value="0.040" />
+    <param name="parking_corner_slow_gap_m" value="0.11" />
+    <param name="parking_corner_turn_hard_gap_m" value="0.025" />
+    <param name="parking_corner_turn_slow_gap_m" value="0.065" />
+    <param name="parking_rear_clear_nudge_speed_mps" value="0.055" />
+    <param name="parking_rear_clear_front_min_m" value="0.32" />
+    <param name="parking_rear_clear_wall_min_m" value="0.42" />
+    <param name="parking_recenter_threshold_px" value="48.0" />
+    <param name="wall_detour_away_m" value="0.18" />
+    <param name="wall_detour_min_away_m" value="0.08" />
+    <param name="wall_detour_pass_m" value="0.44" />
+    <param name="wall_detour_max_away_m" value="0.24" />
+    <param name="wall_detour_speed_mps" value="0.10" />
+    <param name="wall_detour_hard_clearance_m" value="0.19" />
+    <param name="wall_standoff_m" value="0.58" />
+    <param name="parking_timeout_s" value="55.0" />
+    <param name="parking_retries" value="1" />
+    <param name="mission_timeout_s" value="420.0" />
+  </node>
+</launch>

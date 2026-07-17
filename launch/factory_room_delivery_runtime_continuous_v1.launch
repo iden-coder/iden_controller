@@ -1,0 +1,282 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="start_safety_monitor" default="true" />
+
+  <!-- One safety filter protects both stages. During a continuous sweep the
+       navigator's rectangular body guard is primary; during parking the
+       centerline controller owns the deliberate close-wall approach. -->
+  <node if="$(arg start_safety_monitor)" pkg="iden_controller"
+        type="two_stage_profile_safety_scan_parking_v1.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="parking_passthrough" value="true" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_stop_m" value="0.21" />
+    <param name="front_slow_m" value="0.35" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_stop_m" value="0.15" />
+    <param name="side_slow_m" value="0.235" />
+    <param name="nav_max_forward_mps" value="0.60" />
+    <param name="nav_max_lateral_mps" value="0.06" />
+    <param name="nav_max_angular_rps" value="0.84" />
+    <param name="indoor_trigger_y" value="-1.75" />
+    <param name="indoor_front_critical_m" value="0.17" />
+    <param name="indoor_front_stop_m" value="0.19" />
+    <param name="indoor_front_slow_m" value="0.31" />
+    <param name="indoor_side_critical_m" value="0.12" />
+    <param name="indoor_side_stop_m" value="0.14" />
+    <param name="indoor_side_avoid_m" value="0.17" />
+    <param name="indoor_side_slow_m" value="0.215" />
+    <param name="room_wall_front_relax_m" value="0.08" />
+    <param name="room_wall_side_relax_m" value="0.05" />
+    <param name="room_cone_base_pad_m" value="0.10" />
+    <param name="room_cone_single_pass_filter" value="true" />
+    <param name="cone_turn_hard_stop_m" value="0.16" />
+    <param name="cone_turn_stop_m" value="0.20" />
+    <param name="cone_turn_slow_m" value="0.32" />
+    <param name="cone_turn_escape_rps" value="0.22" />
+      <param name="cone_turn_hard_lateral_escape_mps" value="0.055" />
+      <param name="cone_turn_hard_escape_side_clear_m" value="0.32" />
+      <param name="cone_turn_hard_auto_escape_side_bias_m" value="0.08" />
+    <param name="cone_front_stop_m" value="0.20" />
+    <param name="cone_front_slow_m" value="0.33" />
+    <param name="cone_front_lateral_escape_mps" value="0.040" />
+    <param name="cone_front_auto_escape_side_clear_m" value="0.36" />
+    <param name="cone_front_auto_escape_side_bias_m" value="0.08" />
+    <param name="cone_side_stop_m" value="0.18" />
+    <param name="cone_side_slow_m" value="0.29" />
+    <param name="continuous_scan_safety_topic"
+           value="/continuous_scan/safety_mode" />
+    <param name="continuous_scan_cone_turn_hard_stop_m" value="0.10" />
+    <param name="parking_mode_timeout_s" value="1.20" />
+    <param name="close_cone_recovery_trigger_m" value="0.20" />
+    <param name="close_cone_recovery_release_m" value="0.27" />
+    <param name="close_cone_recovery_delay_s" value="0.7" />
+    <param name="close_cone_recovery_speed_mps" value="0.055" />
+    <param name="close_cone_recovery_duration_s" value="1.8" />
+    <param name="close_cone_recovery_rear_start_m" value="0.31" />
+    <param name="close_cone_recovery_rear_abort_m" value="0.18" />
+    <param name="close_cone_recovery_cooldown_s" value="1.5" />
+    <param name="close_cone_recovery_lateral_mps" value="0.045" />
+    <param name="close_cone_recovery_side_clear_m" value="0.30" />
+    <param name="close_cone_recovery_side_bias_m" value="0.08" />
+  </node>
+
+  <node pkg="iden_controller" type="run_factory_room_ocr_ros.sh"
+        name="factory_room_ocr" output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="8.0" />
+    <!-- Require a longer consensus before a workshop label can hand off to
+         parking. This rejects short, clipped readings near an image edge. -->
+    <param name="vote_window" value="12" />
+    <param name="vote_need" value="8" />
+    <param name="enabled_on_start" value="false" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_continuous_scan_search_v5.py"
+        name="factory_room_continuous_scan_search" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/front_first_smooth_navigation_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/front_first_stable_dynamic_route_test_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/front_first_room_rect_sweep_route_test_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/fixed_point_continuous_ocr_sweep_route_test_v2.yaml"
+              command="load" />
+    <!-- Load last: the fixed-point sweep profile historically disabled room
+         lateral motion, while the active navigation now reuses the bounded
+         first-stage obstacle-only lateral assist. -->
+    <rosparam file="$(find iden_controller)/config/front_first_stable_dynamic_route_lateral_v2.yaml"
+              command="load" />
+    <!-- Treat each confirmed cone as a 16 cm temporary exclusion obstacle. -->
+    <param name="dynamic_exclusion_radius_m" value="0.16" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="publish_initial_pose_on_start" value="false" />
+    <param name="require_start_near_initial" value="false" />
+    <param name="task_result_topic" value="/factory/subtask1_result" />
+    <param name="search_status_topic" value="/factory_room/continuous_scan_status" />
+    <param name="search_control_topic" value="/factory_room/continuous_scan_control" />
+    <param name="start_after_tts_s" value="7.0" />
+    <param name="ocr_candidate_hold_s" value="2.4" />
+    <param name="ocr_non_target_ignore_s" value="1.0" />
+    <param name="handoff_edge_margin_px" value="12.0" />
+    <param name="handoff_min_bbox_width_px" value="55.0" />
+    <param name="candidate_gate_approach_tolerance_m" value="0.20" />
+    <param name="candidate_gate_final_tolerance_m" value="0.10" />
+    <param name="candidate_gate_minimum_travel_m" value="0.03" />
+    <param name="edge_target_recenter_fresh_s" value="0.65" />
+    <param name="edge_target_recenter_gain" value="0.28" />
+    <param name="edge_target_recenter_min_rps" value="0.08" />
+    <param name="edge_target_recenter_max_rps" value="0.20" />
+    <!-- Any plausible workshop sign is first translated into the center of
+         the camera. The shared side-lidar safety filter remains authoritative
+         and a bounded/stale acquisition always returns to the yaw sweep. -->
+    <param name="suspect_lateral_center_tolerance_px" value="70.0" />
+    <param name="suspect_lateral_command_sign" value="-1.0" />
+    <param name="suspect_lateral_gain" value="0.10" />
+    <param name="suspect_lateral_min_mps" value="0.025" />
+    <param name="suspect_lateral_max_mps" value="0.055" />
+    <param name="suspect_lateral_max_shift_m" value="0.42" />
+    <param name="suspect_lateral_fresh_s" value="1.20" />
+    <param name="suspect_lateral_progress_m" value="0.008" />
+    <param name="suspect_lateral_stuck_s" value="2.00" />
+    <param name="suspect_lateral_cooldown_s" value="1.20" />
+    <param name="suspect_lateral_pixel_progress_px" value="6.0" />
+    <!-- A sign can reach parking only after: two live detections, lidar wall
+         alignment (nearest cardinal heading is the fallback), fresh OCR votes,
+         optional lateral centering, and the same checks once more. -->
+    <param name="suspect_confirm_frames" value="2" />
+    <param name="suspect_confirm_fresh_s" value="0.65" />
+    <param name="suspect_wall_tolerance_deg" value="3.0" />
+    <param name="suspect_handoff_wall_tolerance_deg" value="4.0" />
+    <param name="suspect_wall_stable_frames" value="3" />
+    <param name="suspect_wall_timeout_s" value="5.5" />
+    <param name="suspect_wall_stuck_s" value="1.8" />
+    <param name="suspect_wall_kp" value="1.35" />
+    <param name="suspect_wall_min_rps" value="0.10" />
+    <param name="suspect_wall_max_rps" value="0.28" />
+    <param name="suspect_lateral_heading_max_rps" value="0.12" />
+    <param name="suspect_orthogonal_settle_s" value="0.30" />
+    <param name="suspect_orthogonal_verify_timeout_s" value="2.8" />
+    <param name="suspect_camera_hfov_deg" value="70.0" />
+    <param name="suspect_laser_yaw_rad" value="-0.07" />
+    <param name="suspect_wall_sector_deg" value="72.0" />
+    <param name="suspect_wall_min_range_m" value="0.20" />
+    <param name="suspect_wall_max_range_m" value="1.65" />
+    <param name="suspect_wall_inlier_m" value="0.035" />
+    <param name="suspect_wall_min_inliers" value="12" />
+    <param name="suspect_wall_min_span_m" value="0.22" />
+    <param name="suspect_wall_max_heading_deg" value="55.0" />
+    <!-- Inside the final 34 cm, use bounded chassis corrections instead of
+         repeatedly replanning a very short path. Reverse remains disabled by
+         the shared safety monitor because the rear cannot be assumed clear. -->
+    <param name="near_scan_micro_trigger_m" value="0.42" />
+    <param name="near_scan_micro_timeout_s" value="12.0" />
+    <param name="near_scan_micro_stuck_s" value="2.5" />
+    <param name="near_scan_micro_progress_m" value="0.010" />
+    <param name="near_scan_micro_yaw_progress_deg" value="3.0" />
+    <param name="near_scan_micro_forward_gain" value="0.80" />
+    <param name="near_scan_micro_lateral_gain" value="0.80" />
+    <param name="near_scan_micro_yaw_gain" value="0.90" />
+    <param name="near_scan_micro_max_forward_mps" value="0.10" />
+    <param name="near_scan_micro_max_lateral_mps" value="0.045" />
+    <param name="near_scan_micro_max_yaw_rps" value="0.20" />
+    <param name="near_scan_micro_yaw_slow_deg" value="20.0" />
+    <param name="non_target_view_ignore_min_s" value="2.8" />
+    <param name="non_target_view_ignore_max_s" value="8.0" />
+    <param name="non_target_view_release_yaw_deg" value="22.0" />
+  </node>
+
+  <node pkg="iden_controller" type="factory_room_delivery_manager_continuous_v8.py"
+        name="factory_room_delivery_manager" output="screen" required="true">
+    <rosparam file="$(find iden_controller)/config/factory_room_mission_parking_v7.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_center_only_full_v2.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_delivery_robust_v2.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/factory_room_recovery_fast_parking_v3.yaml"
+              command="load" />
+    <param name="task_result_topic" value="/factory/subtask1_result" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="scan_topic" value="/scan" />
+    <param name="pose_topic" value="/amcl_pose" />
+    <param name="odom_topic" value="/odom" />
+    <param name="cmd_vel_topic" value="/cmd_vel_raw" />
+    <param name="parking_close_mode_topic" value="/factory/parking_close_mode" />
+    <param name="search_status_topic" value="/factory_room/continuous_scan_status" />
+    <param name="search_control_topic" value="/factory_room/continuous_scan_control" />
+    <param name="search_start_timeout_s" value="22.0" />
+    <!-- Keep the inherited value consistent with the proven standalone
+         center-only parking test.  V7 also reads its explicit direct value. -->
+    <param name="center_sign_tolerance_px" value="45.0" />
+    <param name="center_sign_stable_frames" value="3" />
+    <param name="parking_heartbeat_period_s" value="0.20" />
+    <param name="center_precision_tolerance_m" value="0.008" />
+    <param name="center_stop_lead_m" value="0.025" />
+    <param name="center_settle_duration_s" value="0.35" />
+    <param name="center_success_hold_s" value="0.40" />
+    <param name="center_near_band_m" value="0.080" />
+    <param name="center_near_min_speed_mps" value="0.018" />
+    <param name="center_near_max_speed_mps" value="0.035" />
+    <param name="center_far_full_speed_error_m" value="0.120" />
+    <param name="center_reverse_correction_speed_mps" value="0.020" />
+    <param name="center_reverse_rear_clearance_m" value="0.14" />
+    <param name="center_max_reverse_correction_m" value="0.050" />
+    <param name="center_reverse_recover_limit_m" value="0.030" />
+    <param name="center_final_heading_tolerance_deg" value="2.8" />
+    <param name="center_near_heading_max_rps" value="0.018" />
+    <param name="center_heading_retreat_wall_m" value="0.270" />
+    <param name="center_heading_retreat_speed_mps" value="0.030" />
+    <param name="center_heading_retreat_max_distance_m" value="0.140" />
+    <param name="center_heading_retreat_timeout_s" value="5.0" />
+    <param name="parking_fresh_ocr_timeout_s" value="2.2" />
+    <param name="parking_fresh_ocr_frames" value="3" />
+    <param name="parking_center_attempts" value="2" />
+    <param name="parking_final_verify_cycles" value="2" />
+    <param name="parking_clearance_advance_speed_mps" value="0.040" />
+    <param name="parking_clearance_advance_distance_m" value="0.080" />
+    <param name="parking_clearance_advance_timeout_s" value="3.0" />
+    <param name="parking_clearance_wall_min_m" value="0.40" />
+    <param name="parking_clearance_front_min_m" value="0.32" />
+    <param name="parking_clearance_side_release_m" value="0.11" />
+    <param name="parking_straight_side_min_m" value="0.045" />
+    <param name="parking_oriented_wall_inlier_m" value="0.035" />
+    <param name="parking_oriented_wall_min_inliers" value="12" />
+    <param name="parking_oriented_wall_min_span_m" value="0.20" />
+    <param name="parking_oriented_wall_max_heading_deg" value="48.0" />
+    <param name="parking_ocr_heading_bootstrap_timeout_s" value="2.8" />
+    <param name="parking_ocr_heading_bootstrap_tolerance_px" value="45.0" />
+    <param name="parking_ocr_heading_bootstrap_kp" value="0.40" />
+    <param name="parking_ocr_heading_bootstrap_min_rps" value="0.09" />
+    <param name="parking_ocr_heading_bootstrap_max_rps" value="0.24" />
+    <param name="parking_ocr_heading_bootstrap_front_min_m" value="0.28" />
+    <param name="parking_ocr_heading_bootstrap_side_min_m" value="0.08" />
+    <param name="parking_orthogonal_camera_hfov_deg" value="70.0" />
+    <param name="parking_orthogonal_timeout_s" value="6.0" />
+    <param name="parking_orthogonal_tolerance_deg" value="3.0" />
+    <param name="parking_orthogonal_kp" value="1.35" />
+    <param name="parking_orthogonal_min_rps" value="0.10" />
+    <param name="parking_orthogonal_max_rps" value="0.28" />
+    <param name="parking_orthogonal_wall_wait_s" value="1.2" />
+    <param name="parking_direct_tolerance_px" value="45.0" />
+    <param name="parking_direct_stable_frames" value="3" />
+    <param name="parking_direct_timeout_s" value="10.0" />
+    <param name="parking_direct_min_effective_speed_mps" value="0.026" />
+    <param name="parking_direct_narrow_speed_cap_mps" value="0.032" />
+    <param name="parking_direct_progress_px" value="2.0" />
+    <param name="parking_direct_boost_after_s" value="1.2" />
+    <param name="parking_direct_fail_after_s" value="3.6" />
+    <param name="parking_direct_boost_speed_mps" value="0.036" />
+    <param name="parking_direct_heading_abort_deg" value="12.0" />
+    <param name="parking_direct_ocr_stale_timeout_s" value="1.6" />
+    <!-- If a cone/wall blocks the last few centimetres of lateral motion,
+         estimate the true offset from camera geometry. Staying centred within
+         the 50 cm bay is safer than forcing a sideways collision. -->
+    <param name="parking_direct_blocked_accept_lateral_m" value="0.075" />
+    <param name="parking_direct_blocked_accept_max_px" value="80.0" />
+    <param name="parking_direct_clearance_recoveries" value="1" />
+    <param name="parking_false_handoff_max_resumes" value="2" />
+    <param name="parking_false_handoff_ack_timeout_s" value="2.5" />
+    <param name="parking_false_handoff_search_timeout_s" value="75.0" />
+    <param name="parking_false_handoff_recheck_age_s" value="1.8" />
+    <param name="parking_false_handoff_min_votes" value="8" />
+    <param name="parking_target_max_retries" value="1" />
+    <param name="parking_target_retry_delay_s" value="0.4" />
+    <param name="room_hard_timeout_s" value="240.0" />
+    <param name="room_parking_timeout_s" value="65.0" />
+    <param name="room_error_voice_text" value="已将货品放入目标车间" />
+  </node>
+</launch>

@@ -1,0 +1,15 @@
+<launch>
+  <node pkg="iden_controller" type="run_factory_room_ocr_ros.sh"
+        name="factory_room_ocr_xunfei2026" output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="health_topic" value="/factory_room/ocr_health" />
+    <param name="process_rate_hz" value="8.0" />
+    <param name="max_width" value="960" />
+    <param name="vote_window" value="12" />
+    <param name="vote_need" value="8" />
+    <param name="enabled_on_start" value="true" />
+    <param name="publish_debug" value="false" />
+  </node>
+</launch>

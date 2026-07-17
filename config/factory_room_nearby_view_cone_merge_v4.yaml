@@ -1,0 +1,18 @@
+# Merge duplicate observations of one physical cone before map inflation.
+dynamic_track_merge_radius_m: 0.14
+dynamic_wall_rejection_clearance_m: 0.16
+dynamic_confirmed_ttl_s: 120.0
+
+# Only d3 and its nearby views skip terminal yaw. d1/d2 keep their proven
+# arrival headings, while parking later aligns d3 to the real wall by lidar.
+d3_position_only_min_x: 2.15
+d3_position_only_max_y: -2.05
+
+# d3 faces the south wall. Positive y offsets move the observation point
+# away from that wall while keeping the same sign inside camera range.
+d3_nearby_offsets_m:
+  - [0.00, 0.14]
+  - [0.00, 0.26]
+  - [-0.16, 0.20]
+  - [-0.28, 0.24]
+  - [-0.26, 0.38]

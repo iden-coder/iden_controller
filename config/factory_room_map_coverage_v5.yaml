@@ -1,0 +1,78 @@
+# V5 map-driven workshop search. Geometry is generated from /static_map.
+coverage_map_service: /static_map
+coverage_room_seed_x: 0.40
+coverage_room_seed_y: -2.30
+coverage_search_radius_x: 3.50
+coverage_search_radius_y: 2.00
+
+# Camera viewing geometry (640x360, fx about 319 px).
+coverage_camera_standoff_m: 0.72
+coverage_effective_half_fov_deg: 35.0
+coverage_candidate_spacing_m: 0.72
+coverage_wall_bin_spacing_m: 0.24
+coverage_corner_trim_m: 0.30
+coverage_min_static_clearance_m: 0.24
+
+# Stable OCR already includes the OCR node's temporal vote. Two fresh stable
+# messages are required before a non-target sign resolves an entire wall.
+coverage_ocr_observe_s: 2.20
+coverage_non_target_confirmations: 2
+coverage_lidar_correction_max_deg: 14.0
+
+# A peripheral OCR detection is only a direction hint. Parking starts after a
+# neighboring map view brings the target within this fraction of image width.
+coverage_target_center_gate_ratio: 0.18
+# A complete target box may hand off to the existing guarded centerline
+# controller when the required lateral correction is short and side-clear.
+coverage_target_edge_margin_px: 20.0
+coverage_target_local_lateral_max_m: 0.28
+coverage_target_side_margin_m: 0.035
+
+# Repositioning must make real monotonic progress toward the visual estimate.
+# This prevents a visited end-of-wall view from sending the robot backwards.
+coverage_hint_min_improvement_m: 0.05
+coverage_hint_min_goal_move_m: 0.21
+coverage_preferred_wall_bonus: 5.0
+coverage_parking_reacquire_attempts: 2
+# Recover a small final-distance overshoot locally. Retreat stays straight and
+# requires a clear rear corridor, so it cannot become an uncontrolled escape.
+coverage_parking_reverse_speed_mps: 0.035
+coverage_parking_reverse_max_m: 0.08
+coverage_parking_reverse_rear_clear_m: 0.18
+coverage_parking_hard_front_m: 0.075
+
+# The first-stage navigator owns the doorway. Coverage remains locked until
+# AMCL confirms that the robot has crossed into the large room.
+coverage_entry_enabled: true
+coverage_entry_launch_pkg: iden_controller
+coverage_entry_launch_file: factory_room_entry_map_coverage_v5.launch
+coverage_entry_node_name: /factory_room_entry_map_coverage_v5
+coverage_entry_status_topic: /factory_room_entry_map_coverage_v5/status
+coverage_entry_goal_x: -0.85
+coverage_entry_goal_y: -1.90
+coverage_entry_goal_yaw: -1.5707963268
+# The mapped room line is y=-1.75. Unlock 3 cm inside it to reject AMCL jitter.
+coverage_entry_trigger_y: -1.78
+coverage_entry_less_than: true
+coverage_entry_stable_samples: 3
+coverage_entry_timeout_s: 150.0
+coverage_entry_stop_nodes:
+  - /global_first_graph_nav
+  - /global_first_nav_qr_room_scan
+
+# The former d3 view is derived from the detected room corner, not a fixed map
+# coordinate. A north-side pre-approach makes the chassis arrive facing -Y.
+coverage_d3_anchor_enabled: true
+coverage_d3_right_inset_m: 0.42
+coverage_d3_bottom_inset_m: 0.80
+coverage_d3_pre_approach_m: 0.48
+# Do not make the far wall-side blind-spot anchor the first cross-room goal.
+coverage_d3_defer_reached_views: 2
+coverage_d3_tight_min_x: 2.45
+coverage_d3_tight_max_y: -2.38
+coverage_d3_goal_tolerance_m: 0.10
+
+# Zero means repeat map coverage until the existing mission safety deadline.
+coverage_max_passes: 0
+coverage_map_wait_s: 12.0
+coverage_retry_pause_s: 0.8

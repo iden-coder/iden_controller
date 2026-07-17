@@ -1,0 +1,44 @@
+route_points:
+  - {name: first_stage, x: -1.48, y: -0.45, yaw: 3.1415926, tolerance: 0.10, require_yaw: false}
+  - {name: doorway_approach, x: -0.85, y: -1.41, yaw: -1.5707963, tolerance: 0.16, require_yaw: false}
+  - {name: room_entry, x: -0.85, y: -1.90, yaw: -1.5707963, tolerance: 0.20, require_yaw: false}
+  - {name: d1, x: -1.43, y: -2.57, yaw: 3.1415926, tolerance: 0.15, require_yaw: false}
+  - {name: d2, x: 0.41, y: -2.00, yaw: 1.5707963, tolerance: 0.15, require_yaw: false}
+  - {name: d3, x: 2.54, y: -2.51, yaw: -1.5707963, tolerance: 0.15, require_yaw: false}
+
+route_final_hold_s: 0.60
+route_yaw_tolerance_deg: 10.0
+route_yaw_speed_rps: 0.26
+
+# Stable temporary obstacle observations.  These values apply everywhere;
+# there is no room-specific controller or parameter switch.
+dynamic_observation_range_m: 1.35
+dynamic_observation_half_angle_deg: 85.0
+dynamic_min_cluster_points: 3
+dynamic_cone_base_pad_m: 0.04
+dynamic_wall_rejection_clearance_m: 0.11
+dynamic_max_cluster_span_m: 0.22
+dynamic_activation_route_point: d1
+dynamic_candidate_path_gate_m: 0.34
+dynamic_association_radius_m: 0.18
+dynamic_track_smoothing_alpha: 0.30
+dynamic_confirm_hits: 3
+dynamic_confirm_age_s: 0.12
+dynamic_pending_ttl_s: 0.75
+dynamic_confirmed_ttl_s: 6.0
+
+# Complete centre exclusion radius: robot half-width plus cone body allowance.
+# It is not inflated again by the static-map footprint clearance.
+dynamic_exclusion_radius_m: 0.25
+dynamic_path_trigger_radius_m: 0.25
+dynamic_layer_update_min_interval_s: 0.40
+dynamic_replan_min_interval_s: 0.85
+dynamic_stuck_replan_s: 2.60
+dynamic_signature_resolution_m: 0.05
+
+# Restore the proven first-stage light wall correction.  It is disabled as
+# soon as the d1 (dynamic obstacle) stage starts.
+front_first_max_lateral_mps: 0.055
+first_stage_max_lateral_mps: 0.055
+dynamic_stage_max_lateral_mps: 0.0
+avoid_lateral_trigger_m: 0.32

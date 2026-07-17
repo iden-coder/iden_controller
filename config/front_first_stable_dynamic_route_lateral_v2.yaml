@@ -1,0 +1,6 @@
+# Restore the proven first-stage reactive lateral assist inside the cone room.
+# Normal path following still commands vy=0.  Lateral velocity is generated
+# only for a close frontal obstruction with free side space, or by the bounded
+# front-first unstuck routine.
+dynamic_stage_max_lateral_mps: 0.055
+

@@ -1,0 +1,21 @@
+<launch>
+  <node name="move_base" pkg="move_base" type="move_base"
+        output="screen" required="true">
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" />
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <rosparam command="load" ns="global_costmap"
+              file="$(find iden_controller)/config/xunfei2026_room_costmap_common_v1.yaml" />
+    <rosparam command="load" ns="local_costmap"
+              file="$(find iden_controller)/config/xunfei2026_room_costmap_common_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_room_global_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_room_local_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_room_move_base_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_room_global_planner_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_room_teb_v1.yaml" />
+  </node>
+</launch>

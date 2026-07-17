@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 WS="${INSTANT_WS:-/home/ucar/instant_ws}"
 PKG_DIR="$WS/src/iden_controller"
@@ -7,6 +7,7 @@ CRED_FILE="$PKG_DIR/config/spark_credentials.env"
 
 source /opt/ros/noetic/setup.bash
 source "$WS/devel/setup.bash"
+set -u
 
 if [[ ! -f "$CRED_FILE" ]]; then
   echo "[ERROR] Missing Spark credential file: $CRED_FILE" >&2
@@ -24,6 +25,6 @@ fi
 
 FILTER_PATTERN='check crc16 faild|header_crc8 error|check frame end|head_len error'
 set +e
-roslaunch iden_controller subtask1_factory_delivery_complete_center_only_front_first_v1.launch "$@" 2>&1 \
+roslaunch iden_controller subtask1_factory_delivery_complete_center_only_front_first_rect_v5.launch "$@" 2>&1 \
   | grep --line-buffered -v -E "$FILTER_PATTERN"
 exit "${PIPESTATUS[0]}"

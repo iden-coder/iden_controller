@@ -1,0 +1,111 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="camera_topic" default="/ucar_camera/image_raw" />
+  <arg name="camera_device" default="/dev/video0" />
+  <arg name="camera_width" default="1280" />
+  <arg name="camera_height" default="720" />
+  <arg name="camera_rate" default="15" />
+  <arg name="qr_angular_speed" default="0.22" />
+  <arg name="qr_decode_rate_hz" default="15.0" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node name="map_server" pkg="map_server" type="map_server"
+        args="$(arg map_yaml)" output="screen" required="true">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <node name="amcl" pkg="amcl" type="amcl" output="screen" required="true">
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_amcl_v1.yaml" />
+  </node>
+
+  <node name="move_base" pkg="move_base" type="move_base"
+        output="screen" required="true">
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" />
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <rosparam command="load" ns="global_costmap"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_costmap_common_v1.yaml" />
+    <rosparam command="load" ns="local_costmap"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_costmap_common_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_global_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_local_costmap_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_move_base_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_global_planner_v1.yaml" />
+    <rosparam command="load"
+              file="$(find iden_controller)/config/xunfei2026_first_stage_teb_v1.yaml" />
+  </node>
+
+  <node name="xunfei2026_first_stage_goal" pkg="iden_controller"
+        type="xunfei2026_first_stage_goal_v1.py" output="screen">
+    <param name="goal_x" value="$(arg goal_x)" />
+    <param name="goal_y" value="$(arg goal_y)" />
+    <param name="goal_yaw" value="$(arg goal_yaw)" />
+    <param name="initial_x" value="0.0" />
+    <param name="initial_y" value="0.0" />
+    <param name="initial_yaw" value="0.0" />
+    <param name="initial_pose_publish_s" value="3.0" />
+    <param name="localization_timeout_s" value="18.0" />
+    <param name="server_timeout_s" value="25.0" />
+    <param name="goal_timeout_s" value="120.0" />
+    <param name="start_delay_s" value="2.0" />
+  </node>
+
+  <node name="xunfei2026_continuous_qr_hybrid" pkg="iden_controller"
+        type="xunfei2026_continuous_qr_hybrid_v1.py" output="screen" required="true">
+    <param name="image_topic" value="$(arg camera_topic)" />
+    <param name="start_camera" value="$(arg start_camera)" />
+    <param name="camera_device" value="$(arg camera_device)" />
+    <param name="camera_width" value="$(arg camera_width)" />
+    <param name="camera_height" value="$(arg camera_height)" />
+    <param name="camera_rate" value="$(arg camera_rate)" />
+    <param name="camera_low_exposure_enabled" value="true" />
+    <param name="camera_low_exposure_absolute" value="100" />
+    <param name="camera_exposure_service" value="/ucar_camera/set_exposure_profile" />
+    <param name="odom_topic" value="/odom" />
+    <param name="scan_topic" value="/scan" />
+    <param name="cmd_vel_topic" value="/cmd_vel" />
+    <param name="nav_status_topic" value="/xunfei2026_first_stage/status" />
+    <param name="result_topic" value="/qr_room_scan_results" />
+    <param name="item_topic" value="/qr_room_scan_item" />
+    <param name="target_count" value="3" />
+    <param name="angular_speed" value="$(arg qr_angular_speed)" />
+    <param name="angular_accel" value="0.75" />
+    <param name="command_rate_hz" value="30.0" />
+    <param name="decode_rate_hz" value="$(arg qr_decode_rate_hz)" />
+    <param name="enhanced_rate_hz" value="2.5" />
+    <param name="decode_scales" value="1.0,1.35,1.7" />
+    <param name="max_frame_width" value="1280" />
+    <param name="nav_settle_s" value="0.7" />
+    <param name="center_enabled" value="true" />
+    <param name="center_timeout_s" value="5.0" />
+    <param name="center_tolerance_m" value="0.035" />
+    <param name="center_max_speed" value="0.08" />
+    <param name="center_gain" value="0.75" />
+    <param name="center_max_move_m" value="0.16" />
+    <param name="center_hard_clearance_m" value="0.20" />
+    <param name="center_sector_half_deg" value="28.0" />
+    <param name="center_pair_sum_min_m" value="0.65" />
+    <param name="center_pair_sum_max_m" value="2.8" />
+    <param name="center_axis_error_limit_m" value="0.32" />
+    <param name="fetch_timeout_s" value="4.0" />
+    <param name="fetch_retries" value="4" />
+    <param name="fetch_retry_delay_s" value="0.35" />
+    <param name="retry_cooldown_s" value="5.0" />
+    <param name="require_url_identity" value="true" />
+    <param name="max_scan_s" value="0.0" />
+  </node>
+</launch>

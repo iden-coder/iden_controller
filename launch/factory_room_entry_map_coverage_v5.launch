@@ -1,0 +1,36 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="config_yaml" default="$(find iden_controller)/config/global_first_graph_nav_2249fcf.yaml" />
+  <arg name="goal_x" default="-0.85" />
+  <arg name="goal_y" default="-1.90" />
+  <arg name="goal_yaw" default="-1.5707963268" />
+
+  <!-- The manager owns the handoff after AMCL crosses the room boundary. -->
+  <node pkg="iden_controller" type="global_first_graph_nav_2249fcf.py"
+        name="factory_room_entry_map_coverage_v5" output="screen"
+        respawn="false" required="true">
+    <rosparam file="$(arg config_yaml)" command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+    <param name="goal_x" value="$(arg goal_x)" />
+    <param name="goal_y" value="$(arg goal_y)" />
+    <param name="goal_yaw" value="$(arg goal_yaw)" />
+    <param name="waypoint_enabled" value="true" />
+    <param name="waypoint_x" value="-0.85" />
+    <param name="waypoint_y" value="-1.41" />
+    <param name="waypoint_tolerance_m" value="0.16" />
+    <param name="waypoint_hold_s" value="0.0" />
+    <param name="publish_initial_pose_on_start" value="false" />
+    <param name="require_start_near_initial" value="false" />
+    <param name="goal_tolerance_m" value="0.11" />
+    <param name="goal_yaw_tolerance_deg" value="10.0" />
+    <param name="goal_hold_s" value="0.2" />
+    <param name="stuck_timeout_s" value="5.0" />
+    <param name="replan_min_interval_s" value="1.2" />
+    <param name="blocked_replan_s" value="1.8" />
+    <param name="front_replan_after_s" value="1.4" />
+    <param name="dynamic_obstacles_enabled" value="true" />
+    <param name="hard_clearance_m" value="0.16" />
+    <param name="preferred_clearance_m" value="0.34" />
+    <param name="smooth_clearance_m" value="0.22" />
+  </node>
+</launch>

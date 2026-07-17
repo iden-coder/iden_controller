@@ -1,0 +1,51 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="goal_x" default="-1.48" />
+  <arg name="goal_y" default="-0.45" />
+  <arg name="goal_yaw" default="3.1415926" />
+  <arg name="waypoint_enabled" default="true" />
+  <arg name="waypoint_x" default="-0.33" />
+  <arg name="waypoint_y" default="-1.02" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+  <arg name="auto_start_nav" default="false" />
+  <arg name="default_voice_text" default="" />
+
+  <node pkg="speech_command" type="cloud_asr_test2"
+        name="cloud_asr_test2" output="screen"
+        respawn="true" respawn_delay="0.8" />
+
+  <node pkg="iden_controller" type="subtask1_real_order_fusion_route_v2.py"
+        name="subtask1_real_order_fusion_route" output="screen">
+    <param name="voice_topic" value="/factory/voice_raw_text" />
+    <param name="qr_summary_topic" value="/qr_room_scan_results" />
+    <param name="tts_topic" value="/factory/tts_text" />
+    <param name="result_topic" value="/factory/subtask1_result" />
+    <param name="compat_target_topic" value="/factory/target_warehouses" />
+    <param name="state_topic" value="/factory/task_state" />
+    <param name="required_item_count" value="3" />
+    <param name="qr_item_topic" value="/qr_room_scan_item" />
+    <param name="qr_scan_control_topic" value="/qr_room_scan_control" />
+    <param name="streaming_qr_decision" value="false" />
+    <param name="require_wake_before_order" value="true" />
+    <param name="require_target_category" value="true" />
+    <param name="rearm_asr_on_incomplete_voice" value="true" />
+    <param name="asr_node_name" value="/cloud_asr_test2" />
+    <param name="asr_rearm_delay_s" value="3.0" />
+    <param name="auto_start_nav" value="$(arg auto_start_nav)" />
+    <param name="default_voice_text" value="$(arg default_voice_text)" />
+    <param name="nav_launch_pkg" value="iden_controller" />
+    <param name="nav_launch_file" value="front_first_qr_room_wall_align_v2.launch" />
+    <param name="nav_roslaunch_args"
+           value="map_yaml:=$(arg map_yaml) goal_x:=$(arg goal_x) goal_y:=$(arg goal_y) goal_yaw:=$(arg goal_yaw) waypoint_enabled:=$(arg waypoint_enabled) waypoint_x:=$(arg waypoint_x) waypoint_y:=$(arg waypoint_y) start_base:=$(arg start_base) start_lidar:=$(arg start_lidar) start_camera:=$(arg start_camera) start_map:=$(arg start_map) start_amcl:=$(arg start_amcl) start_safety_monitor:=$(arg start_safety_monitor) qr_item_topic:=/qr_room_scan_item qr_control_topic:=/qr_room_scan_control qr_after_item_decision_wait_s:=0.0 qr_fetch_timeout_s:=6.0 qr_fetch_retries:=3 qr_fetch_retry_delay_s:=0.4 qr_scan_per_wall_s:=3.6 qr_first_wall_scan_s:=8.0 qr_micro_sweep_deg:=20.0 qr_first_wall_micro_sweep_deg:=40.0 qr_first_wall_micro_sweep_scan_s:=3.0" />
+    <param name="use_spark" value="true" />
+    <param name="require_spark_decision" value="true" />
+    <param name="spark_retry_delay_s" value="6.0" />
+    <param name="spark_retry_max_delay_s" value="24.0" />
+    <param name="post_route_enabled" value="false" />
+  </node>
+</launch>

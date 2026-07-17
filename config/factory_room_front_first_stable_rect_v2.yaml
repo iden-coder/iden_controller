@@ -1,0 +1,40 @@
+indoor_trigger_y: -1.75
+indoor_trigger_less_than: true
+first_stage_max_lateral_mps: 0.055
+room_max_lateral_mps: 0.0
+
+dynamic_observation_range_m: 1.35
+dynamic_observation_half_angle_deg: 85.0
+dynamic_min_cluster_points: 3
+dynamic_cone_base_pad_m: 0.04
+dynamic_wall_rejection_clearance_m: 0.11
+dynamic_max_cluster_span_m: 0.22
+dynamic_candidate_path_gate_m: 0.34
+dynamic_association_radius_m: 0.18
+dynamic_track_smoothing_alpha: 0.30
+dynamic_confirm_hits: 3
+dynamic_confirm_age_s: 0.12
+dynamic_pending_ttl_s: 0.75
+
+# Confirmed cones remain for the complete 600 s room mission.
+dynamic_confirmed_ttl_s: 900.0
+dynamic_exclusion_radius_m: 0.26
+dynamic_path_trigger_radius_m: 0.26
+dynamic_layer_update_min_interval_s: 0.40
+dynamic_replan_min_interval_s: 0.85
+dynamic_stuck_replan_s: 2.60
+dynamic_signature_resolution_m: 0.05
+
+rect_robot_half_length_m: 0.171
+rect_robot_half_width_m: 0.128
+rect_footprint_margin_m: 0.015
+rect_guard_horizon_s: 0.80
+rect_guard_sim_dt_s: 0.05
+rect_guard_scan_range_m: 0.90
+rect_guard_scan_stride: 2
+rect_guard_scan_timeout_s: 0.45
+rect_guard_command_timeout_s: 0.35
+rect_guard_min_turn_rate_rps: 0.08
+rect_guard_worsen_allowance_m: 0.003
+rect_guard_turn_scales: [1.0, 0.75, 0.50, 0.25, 0.0]
+rect_guard_speed_scales: [1.0, 0.75, 0.50, 0.25, 0.0]

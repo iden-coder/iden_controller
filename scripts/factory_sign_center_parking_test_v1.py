@@ -341,8 +341,17 @@ class SignCenterParkingTest(object):
                     ocr.get("label"), ocr.get("bbox"), wall["distance"],
                     math.degrees(wall["heading_error"]))
                 return True
+            now = time.time()
             rospy.logwarn_throttle(
-                1.0, "SIGN_PARK_WAITING OCR, lidar wall and odometry")
+                1.0,
+                "SIGN_PARK_WAITING ocr=%s ocr_age=%.2f wall=%s "
+                "scan_age=%.2f odom=%s odom_age=%.2f",
+                str(snapshot["ocr"] is not None),
+                now - snapshot["ocr_time"],
+                str(snapshot["wall"] is not None),
+                now - snapshot["scan_time"],
+                str(snapshot["odom_xy"] is not None),
+                now - snapshot["odom_time"])
             rate.sleep()
         return False
 
@@ -590,4 +599,3 @@ if __name__ == "__main__":
             rate.sleep()
     except rospy.ROSInterruptException:
         pass
-

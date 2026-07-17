@@ -1,0 +1,107 @@
+<launch>
+  <arg name="map_yaml" default="$(find ucar_nav)/maps/6.3.1.yaml" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_camera" default="true" />
+  <arg name="start_map" default="true" />
+  <arg name="start_amcl" default="true" />
+  <arg name="start_safety_monitor" default="true" />
+  <arg name="start_ocr" default="true" />
+
+  <include if="$(arg start_base)"
+           file="$(find iden_controller)/launch/my_base_driver_iden_quiet.launch" />
+  <include if="$(arg start_lidar)"
+           file="$(find ydlidar)/launch/ydlidar.launch" />
+
+  <node if="$(arg start_camera)" name="ucar_camera"
+        pkg="ucar_camera" type="ucar_camera.py" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <param name="cam_topic_name" value="/ucar_camera/image_raw" />
+    <param name="device_path" value="/dev/video0" />
+    <param name="image_width" value="1280" />
+    <param name="image_height" value="720" />
+    <param name="rate" value="15" />
+  </node>
+
+  <node if="$(arg start_map)" name="map_server" pkg="map_server"
+        type="map_server" args="$(arg map_yaml)" output="screen"
+        respawn="true">
+    <param name="frame_id" value="map" />
+  </node>
+  <include if="$(arg start_amcl)"
+           file="$(find ucar_nav)/launch/config/amcl/amcl_omni.launch" />
+
+  <!-- First-stage values match v1. Only the room profile relaxes walls while
+       retaining dedicated cone checks and rectangular sweep protection. -->
+  <node if="$(arg start_safety_monitor)" pkg="iden_controller"
+        type="two_stage_profile_safety_scan_v2.py"
+        name="global_first_safety_monitor" output="screen"
+        respawn="true" respawn_delay="1.0">
+    <rosparam file="$(find iden_controller)/config/global_first_safety_parking_v8.yaml"
+              command="load" />
+    <param name="parking_passthrough" value="false" />
+    <param name="escape_enabled" value="false" />
+    <param name="allow_reverse" value="false" />
+    <param name="front_critical_m" value="0.17" />
+    <param name="front_stop_m" value="0.21" />
+    <param name="front_slow_m" value="0.35" />
+    <param name="side_critical_m" value="0.12" />
+    <param name="side_stop_m" value="0.15" />
+    <param name="side_slow_m" value="0.235" />
+    <param name="nav_max_forward_mps" value="0.60" />
+    <param name="nav_max_lateral_mps" value="0.06" />
+    <param name="nav_max_angular_rps" value="0.84" />
+
+    <param name="indoor_trigger_y" value="-1.75" />
+    <param name="indoor_front_critical_m" value="0.17" />
+    <param name="indoor_front_stop_m" value="0.19" />
+    <param name="indoor_front_slow_m" value="0.31" />
+    <param name="indoor_side_critical_m" value="0.12" />
+    <param name="indoor_side_stop_m" value="0.14" />
+    <param name="indoor_side_avoid_m" value="0.17" />
+    <param name="indoor_side_slow_m" value="0.215" />
+    <param name="room_wall_front_relax_m" value="0.08" />
+    <param name="room_wall_side_relax_m" value="0.05" />
+
+    <param name="room_cone_base_pad_m" value="0.10" />
+    <param name="cone_turn_hard_stop_m" value="0.16" />
+    <param name="cone_turn_stop_m" value="0.25" />
+    <param name="cone_turn_slow_m" value="0.36" />
+    <param name="cone_turn_escape_rps" value="0.22" />
+    <param name="cone_front_stop_m" value="0.23" />
+    <param name="cone_front_slow_m" value="0.38" />
+    <param name="cone_side_stop_m" value="0.20" />
+    <param name="cone_side_slow_m" value="0.32" />
+    <param name="continuous_scan_safety_topic"
+           value="/continuous_scan/safety_mode" />
+    <param name="continuous_scan_cone_turn_hard_stop_m" value="0.10" />
+  </node>
+
+  <node if="$(arg start_ocr)" pkg="iden_controller"
+        type="run_factory_room_ocr_ros.sh" name="factory_room_ocr"
+        output="screen" required="true">
+    <param name="image_topic" value="/ucar_camera/image_raw" />
+    <param name="result_topic" value="/factory_room/ocr_result" />
+    <param name="control_topic" value="/factory_room/ocr_control" />
+    <param name="process_rate_hz" value="4.0" />
+    <param name="vote_window" value="10" />
+    <param name="vote_need" value="5" />
+    <param name="enabled_on_start" value="false" />
+    <param name="publish_debug" value="true" />
+  </node>
+
+  <node pkg="iden_controller"
+        type="fixed_point_continuous_ocr_sweep_route_test_v2.py"
+        name="fixed_point_continuous_ocr_sweep_route_test_v2"
+        output="screen" respawn="false" required="true">
+    <rosparam file="$(find iden_controller)/config/front_first_smooth_navigation_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/front_first_stable_dynamic_route_test_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/front_first_room_rect_sweep_route_test_v1.yaml"
+              command="load" />
+    <rosparam file="$(find iden_controller)/config/fixed_point_continuous_ocr_sweep_route_test_v2.yaml"
+              command="load" />
+    <param name="map_yaml" value="$(arg map_yaml)" />
+  </node>
+</launch>
