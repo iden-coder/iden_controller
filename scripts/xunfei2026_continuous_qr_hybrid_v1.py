@@ -344,15 +344,15 @@ class ContinuousQRHybrid(object):
             array = np.frombuffer(msg.data, dtype=np.uint8)
             encoding = (msg.encoding or "").lower()
             if encoding in ("rgb8", "bgr8"):
-                image = array.reshape((msg.height, msg.width, 3))
+                image = self.reshape_raw_image(msg, array, 3)
                 conversion = cv2.COLOR_RGB2GRAY if encoding == "rgb8" else cv2.COLOR_BGR2GRAY
                 gray = cv2.cvtColor(image, conversion)
             elif encoding in ("rgba8", "bgra8"):
-                image = array.reshape((msg.height, msg.width, 4))
+                image = self.reshape_raw_image(msg, array, 4)
                 conversion = cv2.COLOR_RGBA2GRAY if encoding == "rgba8" else cv2.COLOR_BGRA2GRAY
                 gray = cv2.cvtColor(image, conversion)
             elif encoding in ("mono8", "8uc1"):
-                gray = array.reshape((msg.height, msg.width))
+                gray = self.reshape_raw_image(msg, array, 1)
             else:
                 rospy.logwarn_throttle(3.0, "QR unsupported image encoding=%s", msg.encoding)
                 return
@@ -367,6 +367,51 @@ class ContinuousQRHybrid(object):
                 self.image_stamp = rospy.Time.now()
         except Exception as exc:
             rospy.logwarn_throttle(2.0, "QR image conversion failed: %s", exc)
+
+    def reshape_raw_image(self, msg, array, channels):
+        """Recover raw frames even when a camera driver publishes stale dimensions."""
+        height = int(msg.height)
+        width = int(msg.width)
+        expected = height * width * channels
+        if expected == array.size:
+            return array.reshape((height, width, channels)) if channels > 1 else array.reshape((height, width))
+
+        pixels = array.size // channels
+        if pixels * channels != array.size:
+            raise ValueError("raw image byte count is not divisible by channels")
+        candidates = [
+            (self.camera_width, self.camera_height),
+            (640, 480), (800, 600), (1280, 720), (1280, 960),
+            (1920, 1080), (320, 240),
+        ]
+        for actual_width, actual_height in candidates:
+            if actual_width * actual_height != pixels:
+                continue
+            rospy.logwarn_throttle(
+                5.0,
+                "QR_CAMERA_METADATA_RECOVERED declared=%dx%d actual=%dx%d source=data",
+                width, height, actual_width, actual_height)
+            return (array.reshape((actual_height, actual_width, channels))
+                    if channels > 1 else array.reshape((actual_height, actual_width)))
+
+        # Some camera drivers leave width, height and step from the requested
+        # mode even when V4L2 silently falls back to another resolution.  Step
+        # is therefore only a last resort and must produce a plausible aspect.
+        step = int(getattr(msg, "step", 0) or 0)
+        if step >= channels and step % channels == 0 and array.size % step == 0:
+            step_height = array.size // step
+            step_width = step // channels
+            aspect = float(step_width) / max(1.0, float(step_height))
+            if step_height > 0 and step_width > 0 and 0.75 <= aspect <= 2.40:
+                rospy.logwarn_throttle(
+                    5.0,
+                    "QR_CAMERA_METADATA_RECOVERED declared=%dx%d actual=%dx%d source=step",
+                    width, height, step_width, step_height)
+                return (array.reshape((step_height, step_width, channels))
+                        if channels > 1 else array.reshape((step_height, step_width)))
+        raise ValueError(
+            "cannot infer raw image shape: declared={}x{} channels={} bytes={}".format(
+                width, height, channels, array.size))
 
     def odom_callback(self, msg):
         q = msg.pose.pose.orientation
@@ -790,6 +835,17 @@ class ContinuousQRHybrid(object):
         if not self.start_camera:
             rospy.logwarn("QR camera autostart disabled; waiting for external image source")
             return True
+        # The complete flow may already own /dev/video0.  Reuse its ROS stream
+        # instead of starting a second driver and making both camera users fail.
+        reuse_deadline = time.monotonic() + 1.0
+        while not rospy.is_shutdown() and time.monotonic() < reuse_deadline:
+            with self.lock:
+                image_stamp = self.image_stamp
+                ready = self.latest_gray is not None
+            if ready and image_stamp is not None and (rospy.Time.now() - image_stamp).to_sec() < 1.0:
+                rospy.logwarn("QR_CAMERA_REUSED topic=%s", self.image_topic)
+                return True
+            rospy.sleep(0.05)
         command = [
             "rosrun", "ucar_camera", "ucar_camera.py", "__name:=ucar_camera",
             "_cam_topic_name:={}".format(self.image_topic),

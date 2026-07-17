@@ -30,7 +30,9 @@
     <param name="streaming_qr_decision" value="false" />
     <param name="require_wake_before_order" value="true" />
     <param name="require_target_category" value="true" />
-    <param name="rearm_asr_on_incomplete_voice" value="true" />
+    <!-- cloud_asr_test2 now resumes the same continuous AIUI session after
+         the category prompt; killing and respawning it added several seconds. -->
+    <param name="rearm_asr_on_incomplete_voice" value="false" />
     <param name="asr_node_name" value="/cloud_asr_test2" />
     <param name="asr_rearm_delay_s" value="3.0" />
     <param name="asr_tts_start_timeout_s" value="7.0" />
@@ -61,6 +63,11 @@
     <param name="ocr_ready_timeout_s" value="12.0" />
     <param name="ocr_max_restarts" value="2" />
     <param name="cone_control_topic" value="/factory_room/navigation_active" />
+    <!-- Match the active base_link -> laser_frame transform in
+         ydlidar/launch/ydlidar.launch. -->
+    <param name="laser_offset_x_m" value="0.11" />
+    <param name="laser_offset_y_m" value="0.0" />
+    <param name="laser_yaw_rad" value="-0.07" />
     <param name="wait_after_tts_s" value="1.0" />
     <!-- OCR loads while the first-stage navigator enters the room.  Reusing
          that already-running move_base removes the long stationary handoff. -->
@@ -78,12 +85,16 @@
     <param name="required_ocr_votes" value="8" />
     <param name="candidate_ocr_votes" value="5" />
     <param name="target_confirm_frames" value="3" />
-    <param name="target_edge_margin_ratio" value="0.05" />
+    <param name="target_edge_margin_ratio" value="0.08" />
+    <param name="target_vertical_edge_margin_ratio" value="0.02" />
+    <param name="target_handoff_center_ratio" value="0.24" />
+    <param name="ocr_image_height" value="600" />
     <param name="non_target_release_distance_m" value="0.24" />
     <param name="non_target_hard_release_distance_m" value="0.52" />
     <param name="non_target_release_yaw_deg" value="16.0" />
     <param name="non_target_hard_release_yaw_deg" value="35.0" />
     <param name="non_target_blank_s" value="0.45" />
+    <param name="non_target_target_override_frames" value="5" />
     <param name="candidate_hold_s" value="1.8" />
     <param name="candidate_cooldown_s" value="1.5" />
     <param name="goal_timeout_s" value="55.0" />
@@ -115,9 +126,9 @@
     <param name="wall_a3_y" value="-2.54" />
     <param name="wall_a4_x" value="-1.43" />
     <param name="wall_a4_y" value="-2.04" />
-    <param name="wall_a1_x" value="2.04" />
+    <param name="wall_a1_x" value="1.94" />
     <param name="wall_a1_y" value="-2.04" />
-    <param name="wall_a2_x" value="2.04" />
+    <param name="wall_a2_x" value="1.94" />
     <param name="wall_a2_y" value="-2.54" />
     <param name="wall_b2_x" value="1.04" />
     <param name="wall_b2_y" value="-2.54" />
@@ -150,19 +161,48 @@
     <param name="wall_corner_turn_min_wz_rps" value="0.12" />
     <param name="wall_corner_turn_max_wz_rps" value="0.34" />
     <param name="wall_corner_rotation_clearance_m" value="0.010" />
-    <param name="wall_cone_side_slow_m" value="0.27" />
-    <param name="wall_cone_side_stop_m" value="0.19" />
-    <param name="wall_cone_side_hard_m" value="0.145" />
+    <param name="wall_cone_side_slow_m" value="0.26" />
+    <param name="wall_cone_side_stop_m" value="0.18" />
+    <param name="wall_cone_side_hard_m" value="0.135" />
     <param name="wall_cone_avoid_max_vx_mps" value="0.040" />
     <param name="wall_reverse_hard_gap_m" value="0.040" />
     <param name="wall_reverse_slow_gap_m" value="0.120" />
-    <param name="wall_side_body_hard_gap_m" value="0.025" />
-    <param name="wall_side_body_slow_gap_m" value="0.080" />
+    <!-- Original 2026 navigation is permissive: normal lateral travel is
+         interrupted only at the rectangular body's near-contact boundary. -->
+    <!-- Preserve the proven DIRECT predictive-glide behaviour through cone
+         gaps.  Axial escape is only an emergency for near-zero clearance. -->
+    <param name="wall_side_body_hard_gap_m" value="0.004" />
+    <param name="wall_side_body_slow_gap_m" value="0.014" />
+    <param name="wall_return_release_margin_m" value="0.080" />
     <param name="wall_side_escape_speed_mps" value="0.045" />
+    <param name="wall_side_flow_hold_s" value="0.9" />
+    <param name="wall_side_flow_lateral_speed_mps" value="0.035" />
+    <param name="wall_side_body_confirm_scans" value="3" />
+    <!-- Predict only the near-term swept rectangle.  This catches a cone in
+         the braking path without restoring a large static exclusion radius. -->
+    <param name="motion_prediction_horizon_s" value="0.60" />
+    <param name="motion_prediction_margin_m" value="0.012" />
+    <param name="motion_prediction_steps" value="6" />
+    <param name="predictive_escape_speed_mps" value="0.035" />
+    <param name="wall_side_corridor_margin_m" value="0.010" />
+    <param name="wall_side_corridor_cluster_gap_m" value="0.10" />
+    <param name="wall_side_corridor_max_cluster_span_m" value="0.24" />
+    <param name="wall_side_corridor_center_tolerance_m" value="0.025" />
+    <param name="wall_side_corridor_center_kp" value="0.8" />
+    <param name="wall_side_corridor_max_vx_mps" value="0.07" />
+    <param name="wall_side_corridor_vy_mps" value="0.09" />
     <param name="parking_wall_tolerance_m" value="0.012" />
-    <param name="parking_center_filter_alpha" value="0.45" />
-    <param name="parking_center_max_step_px" value="70.0" />
-    <param name="parking_approach_max_vy_mps" value="0.060" />
+    <!-- Keep yaw perpendicular to the wall and use the omni lateral axis to
+         center the OCR sign.  Faster center tracking removes the old yaw/vy
+         oscillation without bypassing the rectangular-footprint guards. -->
+    <param name="parking_center_tolerance_px" value="24.0" />
+    <param name="parking_center_filter_alpha" value="0.65" />
+    <param name="parking_center_max_step_px" value="100.0" />
+    <param name="parking_approach_max_vy_mps" value="0.075" />
+    <param name="parking_translation_heading_gate_deg" value="8.0" />
+    <param name="parking_recovery_trigger_vy_mps" value="0.015" />
+    <param name="parking_escape_lateral_speed_mps" value="0.035" />
+    <param name="parking_forward_escape_margin_m" value="0.020" />
     <param name="parking_lateral_hard_clearance_m" value="0.18" />
     <param name="parking_lateral_slow_clearance_m" value="0.29" />
     <!-- Rectangular-footprint guard catches cones beside the rear corners,
@@ -180,9 +220,10 @@
     <param name="wall_detour_pass_m" value="0.44" />
     <param name="wall_detour_max_away_m" value="0.24" />
     <param name="wall_detour_speed_mps" value="0.10" />
-    <param name="wall_detour_hard_clearance_m" value="0.19" />
+    <param name="wall_detour_hard_clearance_m" value="0.18" />
     <param name="wall_standoff_m" value="0.58" />
     <param name="parking_timeout_s" value="55.0" />
+    <param name="parking_target_reacquire_s" value="8.0" />
     <param name="parking_retries" value="1" />
     <param name="mission_timeout_s" value="420.0" />
   </node>

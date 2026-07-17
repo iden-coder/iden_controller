@@ -21,6 +21,8 @@
   <arg name="camera_device" default="/dev/video0" />
   <arg name="camera_width" default="1280" />
   <arg name="camera_height" default="720" />
+  <arg name="camera_pixel_format" default="MJPG" />
+  <arg name="camera_capture_fps" default="30" />
   <arg name="camera_rate" default="15" />
 
   <include if="$(arg start_base)"
@@ -35,6 +37,8 @@
     <param name="device_path" value="$(arg camera_device)" />
     <param name="image_width" value="$(arg camera_width)" />
     <param name="image_height" value="$(arg camera_height)" />
+    <param name="pixel_format" value="$(arg camera_pixel_format)" />
+    <param name="capture_fps" value="$(arg camera_capture_fps)" />
     <param name="rate" value="$(arg camera_rate)" />
   </node>
 

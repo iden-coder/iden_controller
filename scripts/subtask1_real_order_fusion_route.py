@@ -309,9 +309,9 @@ class Subtask1RealOrderFusion(object):
     def extract_target_category(self, text):
         cleaned = normalize_text(text)
         patterns = [
-            (r"食品加工|食品大类|食品类|食品|食物|水果|肉|米|粮", "食品加工类"),
-            (r"日用品加工|日用品大类|日用品类|日用品|生活用品|毛巾|牙刷|棉被|衣物", "日用品类"),
-            (r"电子产品生产|电子产品大类|电子产品类|电子产品|电子|电脑|手机|芯片", "电子产品类"),
+            (r"食品加工|食品大类|食品类|食品|食物|水果|肉|米|粮|^食$", "食品加工类"),
+            (r"日用品加工|日用品大类|日用品类|日用品|生活用品|用品类|毛巾|牙刷|棉被|衣物", "日用品类"),
+            (r"电子产品生产|电子产品大类|电子产品类|电子产品|电子|子产品|产品类|电脑|手机|芯片|^电$", "电子产品类"),
         ]
         for pattern, category in patterns:
             if re.search(pattern, cleaned):

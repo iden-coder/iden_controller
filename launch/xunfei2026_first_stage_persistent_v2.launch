@@ -8,8 +8,10 @@
   <arg name="start_camera" default="true" />
   <arg name="camera_topic" default="/ucar_camera/image_raw" />
   <arg name="camera_device" default="/dev/video0" />
-  <arg name="camera_width" default="1280" />
-  <arg name="camera_height" default="720" />
+  <!-- /dev/video0 currently returns 800x600; matching the driver metadata
+       prevents malformed ROS Image messages while retaining full camera data. -->
+  <arg name="camera_width" default="800" />
+  <arg name="camera_height" default="600" />
   <arg name="camera_rate" default="15" />
   <arg name="qr_angular_speed" default="0.22" />
   <arg name="qr_decode_rate_hz" default="15.0" />

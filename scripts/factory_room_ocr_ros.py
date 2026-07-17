@@ -87,25 +87,54 @@ except Exception:
     pass
 
 
+def reshape_raw_image(msg, data, channels):
+    height = int(msg.height)
+    width = int(msg.width)
+    expected = height * width * channels
+    if expected == data.size:
+        shape = ((height, width, channels) if channels > 1
+                 else (height, width))
+        return data.reshape(shape)
+
+    pixels = data.size // channels
+    if pixels * channels != data.size:
+        raise ValueError("image byte count is not divisible by channels")
+    for actual_width, actual_height in (
+            (800, 600), (640, 480), (1280, 720), (1280, 960),
+            (1920, 1080), (320, 240)):
+        if actual_width * actual_height != pixels:
+            continue
+        rospy.logwarn_throttle(
+            5.0,
+            "FACTORY_OCR_CAMERA_METADATA_RECOVERED declared=%dx%d "
+            "actual=%dx%d source=data",
+            width, height, actual_width, actual_height)
+        shape = ((actual_height, actual_width, channels) if channels > 1
+                 else (actual_height, actual_width))
+        return data.reshape(shape)
+    raise ValueError(
+        "cannot infer image shape: declared={}x{} channels={} bytes={}".format(
+            width, height, channels, data.size))
+
+
 def decode_image(msg):
     encoding = (msg.encoding or "").lower()
     data = np.frombuffer(msg.data, dtype=np.uint8)
     try:
         if encoding in ("rgb8", "bgr8"):
-            image = data[:msg.height * msg.width * 3].reshape(
-                (msg.height, msg.width, 3))
+            image = reshape_raw_image(msg, data, 3)
             if encoding == "rgb8":
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             return np.ascontiguousarray(image)
         if encoding in ("rgba8", "bgra8"):
-            image = data[:msg.height * msg.width * 4].reshape(
-                (msg.height, msg.width, 4))
+            image = reshape_raw_image(msg, data, 4)
             code = cv2.COLOR_RGBA2BGR if encoding == "rgba8" else cv2.COLOR_BGRA2BGR
             return cv2.cvtColor(image, code)
         if encoding in ("mono8", "8uc1"):
-            gray = data[:msg.height * msg.width].reshape((msg.height, msg.width))
+            gray = reshape_raw_image(msg, data, 1)
             return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as exc:
+        rospy.logwarn_throttle(2.0, "factory OCR image conversion failed: %s", exc)
         return None
     return None
 
