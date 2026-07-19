@@ -12,3 +12,5 @@ roslaunch iden_controller cruise_navfn_success2.launch
  rosrun iden_controller process_navfn_success2.py
 
 roslaunch iden_controller global_first_graph_nav.launch
+
+~/instant_ws/src/iden_controller/scripts/start_subtask1_xunfei2026_complete_delivery_v1.sh

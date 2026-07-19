@@ -180,7 +180,7 @@ class HybridDecoder(object):
         enhanced = self.clahe.apply(gray)
         blurred = cv2.GaussianBlur(enhanced, (0, 0), 1.0)
         sharpened = cv2.addWeighted(enhanced, 1.6, blurred, -0.6, 0)
-        for scale in self.scales:
+        for scale_index, scale in enumerate(self.scales):
             candidate = sharpened
             if abs(scale - 1.0) > 1.0e-6:
                 candidate = cv2.resize(
@@ -191,6 +191,19 @@ class HybridDecoder(object):
                 self._append(values, text)
             if values:
                 break
+            # A distant QR can have only a few pixels per module.  At the
+            # largest pyramid level, Otsu removes uneven wall illumination and
+            # gives both decoders one crisp black/white candidate without
+            # burdening the high-rate fast thread.
+            if scale_index == len(self.scales) - 1:
+                _threshold, binary = cv2.threshold(
+                    candidate, 0, 255,
+                    cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                self._opencv_decode(binary, values)
+                for text in self.zbar.scan(binary):
+                    self._append(values, text)
+                if values:
+                    break
         return values
 
     def decode(self, gray, use_enhanced=True):

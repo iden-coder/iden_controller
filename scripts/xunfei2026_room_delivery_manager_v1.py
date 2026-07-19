@@ -160,6 +160,8 @@ class Xunfei2026RoomDeliveryManager(object):
             "~target_edge_margin_ratio", 0.05))
         self.target_vertical_edge_margin_ratio = float(rospy.get_param(
             "~target_vertical_edge_margin_ratio", 0.02))
+        self.target_min_visible_height_ratio = float(rospy.get_param(
+            "~target_min_visible_height_ratio", 0.06))
         self.target_handoff_center_ratio = float(rospy.get_param(
             "~target_handoff_center_ratio", 0.24))
         self.ocr_image_height = float(rospy.get_param(
@@ -186,8 +188,45 @@ class Xunfei2026RoomDeliveryManager(object):
         self.camera_bearing_sign = float(rospy.get_param(
             "~camera_bearing_sign", -1.0))
         self.wall_standoff = float(rospy.get_param("~wall_standoff_m", 0.58))
+        self.planned_preparking_enabled = bool(rospy.get_param(
+            "~planned_preparking_enabled", True))
+        self.planned_preparking_timeout = float(rospy.get_param(
+            "~planned_preparking_timeout_s", 12.0))
+        self.planned_preparking_tangent_search = float(rospy.get_param(
+            "~planned_preparking_tangent_search_m", 0.16))
+        self.planned_preparking_max_translation = float(rospy.get_param(
+            "~planned_preparking_max_translation_m", 0.45))
+        self.planned_preparking_corridor = float(rospy.get_param(
+            "~planned_preparking_corridor_m", 0.14))
+        self.preparking_wall_lock_s = float(rospy.get_param(
+            "~preparking_wall_lock_s", 0.55))
+        self.prepark_settle_s = float(rospy.get_param(
+            "~prepark_settle_s", 0.12))
+        self.parking_initial_wall_min = float(rospy.get_param(
+            "~parking_initial_wall_min_m", 0.20))
+        self.parking_initial_wall_max = float(rospy.get_param(
+            "~parking_initial_wall_max_m", 0.85))
+        self.parking_initial_wall_validation_s = float(rospy.get_param(
+            "~parking_initial_wall_validation_s", 0.35))
+        self.parking_wall_heading_prior_tolerance = math.radians(float(
+            rospy.get_param(
+                "~parking_wall_heading_prior_tolerance_deg", 12.0)))
+        self.target_wall_max_yaw_deviation = math.radians(float(
+            rospy.get_param("~target_wall_max_yaw_deviation_deg", 12.0)))
         self.parking_timeout = float(rospy.get_param(
             "~parking_timeout_s", 55.0))
+        self.parking_alignment_timeout = float(rospy.get_param(
+            "~parking_alignment_timeout_s", 14.0))
+        self.parking_no_progress_timeout = float(rospy.get_param(
+            "~parking_no_progress_timeout_s", 2.2))
+        self.parking_no_progress_pixel_delta = float(rospy.get_param(
+            "~parking_no_progress_pixel_delta_px", 12.0))
+        self.parking_no_progress_motion = float(rospy.get_param(
+            "~parking_no_progress_motion_m", 0.035))
+        self.parking_no_progress_retries = int(rospy.get_param(
+            "~parking_no_progress_retries", 2))
+        self.parking_centerline_max_drift = float(rospy.get_param(
+            "~parking_centerline_max_drift_m", 0.035))
         self.parking_target_reacquire_s = float(rospy.get_param(
             "~parking_target_reacquire_s", 8.0))
         self.parking_retries = int(rospy.get_param("~parking_retries", 1))
@@ -199,8 +238,15 @@ class Xunfei2026RoomDeliveryManager(object):
             "~parking_wall_tolerance_m", 0.012))
         self.parking_heading_tolerance = math.radians(float(rospy.get_param(
             "~parking_heading_tolerance_deg", 2.8)))
+        self.parking_heading_release_tolerance = math.radians(float(
+            rospy.get_param("~parking_heading_release_deg", 1.8)))
         self.parking_center_tolerance = float(rospy.get_param(
             "~parking_center_tolerance_px", 20.0))
+        self.parking_center_release_tolerance = float(rospy.get_param(
+            "~parking_center_release_tolerance_px",
+            max(24.0, 1.8 * self.parking_center_tolerance)))
+        self.parking_center_stable_frames = int(rospy.get_param(
+            "~parking_center_stable_frames", 2))
         self.parking_stable_frames = int(rospy.get_param(
             "~parking_stable_frames", 3))
         self.parking_heading_kp = float(rospy.get_param(
@@ -209,10 +255,22 @@ class Xunfei2026RoomDeliveryManager(object):
             "~parking_max_wz_rps", 0.28)))
         self.parking_min_wz = abs(float(rospy.get_param(
             "~parking_min_wz_rps", 0.115)))
+        self.parking_accel_x = abs(float(rospy.get_param(
+            "~parking_accel_x_mps2", 0.42)))
+        self.parking_accel_y = abs(float(rospy.get_param(
+            "~parking_accel_y_mps2", 0.32)))
+        self.parking_accel_wz = abs(float(rospy.get_param(
+            "~parking_accel_wz_rps2", 0.70)))
         self.parking_lateral_kp = float(rospy.get_param(
             "~parking_lateral_kp", 0.28))
         self.parking_lateral_sign = float(rospy.get_param(
-            "~parking_lateral_sign", -1.0))
+            "~parking_lateral_sign", 1.0))
+        self.parking_auto_lateral_sign = bool(rospy.get_param(
+            "~parking_auto_lateral_sign", True))
+        self.parking_lateral_probe_distance = float(rospy.get_param(
+            "~parking_lateral_probe_distance_m", 0.025))
+        self.parking_lateral_divergence = float(rospy.get_param(
+            "~parking_lateral_divergence_px", 35.0))
         self.parking_max_vy = abs(float(rospy.get_param(
             "~parking_max_vy_mps", 0.11)))
         self.parking_min_vy = abs(float(rospy.get_param(
@@ -223,6 +281,8 @@ class Xunfei2026RoomDeliveryManager(object):
             "~parking_slow_vx_mps", 0.035)))
         self.parking_slow_distance = float(rospy.get_param(
             "~parking_slow_distance_m", 0.10))
+        self.parking_visual_freeze_distance = float(rospy.get_param(
+            "~parking_visual_freeze_distance_m", 0.32))
         self.parking_lateral_hard_clearance = float(rospy.get_param(
             "~parking_lateral_hard_clearance_m", 0.20))
         self.parking_lateral_slow_clearance = float(rospy.get_param(
@@ -241,6 +301,8 @@ class Xunfei2026RoomDeliveryManager(object):
             "~parking_rear_clear_front_min_m", 0.32))
         self.parking_rear_clear_wall_min = float(rospy.get_param(
             "~parking_rear_clear_wall_min_m", 0.42))
+        self.parking_forward_escape_wall_min = float(rospy.get_param(
+            "~parking_forward_escape_wall_min_m", 0.28))
         self.reverse_hard_gap = float(rospy.get_param(
             "~wall_reverse_hard_gap_m", 0.040))
         self.reverse_slow_gap = float(rospy.get_param(
@@ -265,6 +327,12 @@ class Xunfei2026RoomDeliveryManager(object):
             "~motion_prediction_margin_m", 0.012))
         self.motion_prediction_steps = int(rospy.get_param(
             "~motion_prediction_steps", 6))
+        self.front_corner_lateral_slow_gap = float(rospy.get_param(
+            "~front_corner_lateral_slow_gap_m", 0.14))
+        self.front_corner_lateral_hard_gap = float(rospy.get_param(
+            "~front_corner_lateral_hard_gap_m", 0.05))
+        self.front_corner_lateral_min_scale = clamp(float(rospy.get_param(
+            "~front_corner_lateral_min_scale", 0.82)), 0.0, 1.0)
         self.predictive_escape_speed = abs(float(rospy.get_param(
             "~predictive_escape_speed_mps", 0.035)))
         self.side_corridor_margin = float(rospy.get_param(
@@ -283,6 +351,8 @@ class Xunfei2026RoomDeliveryManager(object):
             "~wall_side_corridor_vy_mps", 0.09)))
         self.parking_recenter_threshold = float(rospy.get_param(
             "~parking_recenter_threshold_px", 48.0))
+        self.parking_forward_center_gate = float(rospy.get_param(
+            "~parking_forward_center_gate_px", 96.0))
         self.parking_front_emergency = float(rospy.get_param(
             "~parking_front_emergency_m", 0.105))
         self.parking_target_memory_s = float(rospy.get_param(
@@ -295,6 +365,10 @@ class Xunfei2026RoomDeliveryManager(object):
             "~parking_approach_max_vy_mps", 0.060)))
         self.parking_translation_heading_gate = math.radians(float(
             rospy.get_param("~parking_translation_heading_gate_deg", 6.0)))
+        self.parking_final_heading_gate = math.radians(float(rospy.get_param(
+            "~parking_final_heading_gate_deg", 4.5)))
+        self.parking_reverse_correction_speed = abs(float(rospy.get_param(
+            "~parking_reverse_correction_speed_mps", 0.025)))
         self.parking_recovery_trigger_vy = abs(float(rospy.get_param(
             "~parking_recovery_trigger_vy_mps", 0.015)))
         self.parking_escape_lateral_speed = abs(float(rospy.get_param(
@@ -420,6 +494,7 @@ class Xunfei2026RoomDeliveryManager(object):
         self.ocr_health_stamp = 0.0
         self.ocr_restart_count = 0
         self.pose = None
+        self.pose_odom_yaw = None
         self.odom_yaw = None
         self.odom_pose = None
         self.odom_stamp = 0.0
@@ -443,6 +518,7 @@ class Xunfei2026RoomDeliveryManager(object):
         self.parking_center_width = 0.0
         self.parking_center_source_stamp = 0.0
         self.parking_center_aligned = False
+        self.parking_center_lock_odom_pose = None
         self.parking_active = False
         self.parking_wrong_label = ""
         self.parking_wrong_event = threading.Event()
@@ -462,6 +538,9 @@ class Xunfei2026RoomDeliveryManager(object):
         self.shutdown_started = False
         self.direct_cmd = [0.0, 0.0, 0.0]
         self.direct_cmd_stamp = time.monotonic()
+        self.parking_heading_correction_active = False
+        self.parking_guard_active = False
+        self.parking_target_wall_yaw = None
 
         self.tts_pub = rospy.Publisher(self.tts_topic, String, queue_size=3)
         self.ocr_control_pub = rospy.Publisher(
@@ -528,6 +607,10 @@ class Xunfei2026RoomDeliveryManager(object):
         with self.lock:
             self.pose = (msg.pose.pose.position.x,
                          msg.pose.pose.position.y, yaw, time.monotonic())
+            # AMCL updates much more slowly than odometry during a corner turn.
+            # Preserve the odom yaw at the same callback so current_pose() can
+            # propagate map yaw between AMCL updates.
+            self.pose_odom_yaw = self.odom_yaw
 
     def odom_callback(self, msg):
         q = msg.pose.pose.orientation
@@ -661,11 +744,11 @@ class Xunfei2026RoomDeliveryManager(object):
             odom_yaw_delta = (
                 0.0 if odom_anchor is None or odom_pose is None else
                 abs(norm_angle(odom_pose[2] - odom_anchor[2])))
-            target_override_frame = (
-                frame_label == target and votes >= self.candidate_ocr_votes)
-            target_frames = target_frames + 1 if target_override_frame else 0
-            target_override = (
-                target_frames >= self.non_target_target_override_frames)
+            # A physical sign that was already confirmed as another workshop
+            # must never be renamed by a few contradictory OCR frames.  It is
+            # released only after the robot has physically left that view.
+            target_frames = 0
+            target_override = False
             blank_long_enough = (
                 blank_since is not None and now - blank_since >=
                 self.non_target_blank_s)
@@ -674,7 +757,6 @@ class Xunfei2026RoomDeliveryManager(object):
                 yaw_delta >= self.non_target_hard_release_yaw or
                 odom_moved >= self.non_target_hard_release_distance or
                 odom_yaw_delta >= self.non_target_hard_release_yaw or
-                target_override or
                 (blank_long_enough and
                  (moved >= self.non_target_release_distance or
                   yaw_delta >= self.non_target_release_yaw or
@@ -701,52 +783,68 @@ class Xunfei2026RoomDeliveryManager(object):
                 self.non_target_odom_anchor = None
                 self.non_target_blank_since = None
                 self.non_target_target_frames = 0
-            if not target_override:
-                self.ocr_control_pub.publish(String(data="reset"))
+            self.ocr_control_pub.publish(String(data="reset"))
             rospy.logwarn(
                 "OCR_NON_TARGET_VIEW_RELEASED label=%s moved=%.2f/%.2f "
                 "yaw=%.1f/%.1fdeg target_override=%s votes_reset=%s",
                 ignored_label, moved, odom_moved, math.degrees(yaw_delta),
                 math.degrees(odom_yaw_delta), str(target_override),
                 str(not target_override))
-            if not target_override:
-                return
+            return
 
         bbox = payload.get("bbox")
         width = float(payload.get("image_width", 0) or 0)
         height = float(payload.get("image_height", self.ocr_image_height) or
                        self.ocr_image_height)
-        bbox_visible = False
+        bbox_horizontal_visible = False
+        bbox_vertical_visible = False
+        bbox_usable = False
         bbox_centered = False
         if (isinstance(bbox, (list, tuple)) and len(bbox) >= 4 and
                 width > 1.0 and height > 1.0):
             margin_x = self.target_edge_margin_ratio * width
             margin_y = self.target_vertical_edge_margin_ratio * height
-            center_x = 0.5 * (float(bbox[0]) + float(bbox[2]))
-            bbox_visible = (float(bbox[0]) >= margin_x and
-                            float(bbox[2]) <= width - margin_x and
-                            float(bbox[1]) >= margin_y and
-                            float(bbox[3]) <= height - margin_y)
+            left, top, right, bottom = [float(value) for value in bbox[:4]]
+            center_x = 0.5 * (left + right)
+            visible_height = max(0.0, min(bottom, height) - max(top, 0.0))
+            bbox_horizontal_visible = (
+                left >= margin_x and right <= width - margin_x)
+            bbox_vertical_visible = (
+                top >= margin_y and bottom <= height - margin_y)
+            # A wall sign can be clipped by the camera's upper edge while its
+            # horizontal centerline remains reliable.  Permit that observation
+            # to start planned pre-parking, but still reject side-edge fragments
+            # and tiny OCR boxes that cannot identify a physical sign safely.
+            bbox_usable = (
+                bbox_horizontal_visible and
+                visible_height >= max(
+                    18.0, self.target_min_visible_height_ratio * height))
             bbox_centered = (
                 abs(center_x - 0.5 * width) <=
                 self.target_handoff_center_ratio * width)
         target_label_ready = (
             stable and stable_label == target and frame_label == target and
             votes >= self.required_ocr_votes)
-        if target_label_ready and (not bbox_visible or not bbox_centered):
+        if target_label_ready and (not bbox_usable or not bbox_centered):
             rospy.logwarn_throttle(
-                0.5, "OCR_TARGET_FRAMING_WAIT bbox=%s visible=%s centered=%s "
-                "continue_motion=true", str(bbox), str(bbox_visible),
+                0.5, "OCR_TARGET_FRAMING_WAIT bbox=%s horizontal=%s "
+                "vertical=%s usable=%s centered=%s continue_motion=true",
+                str(bbox), str(bbox_horizontal_visible),
+                str(bbox_vertical_visible), str(bbox_usable),
                 str(bbox_centered))
+        elif target_label_ready and bbox_usable and not bbox_vertical_visible:
+            rospy.logwarn_throttle(
+                0.5, "OCR_TARGET_VERTICAL_CLIP_ACCEPTED bbox=%s "
+                "horizontal_centerline_valid=true", str(bbox))
         current_target = (
-            target_label_ready and bbox_visible and bbox_centered)
+            target_label_ready and bbox_usable and bbox_centered)
         with self.lock:
             self.target_confirm_count = (
                 self.target_confirm_count + 1 if current_target else 0)
             confirm_count = self.target_confirm_count
 
-        # Pause only for a stable, current-frame, fully visible target.  Votes
-        # belonging to a previous non-target can no longer trigger this hold.
+        # Pause only for a stable current-frame target whose horizontal extent
+        # is complete. Votes from a previous non-target cannot trigger this hold.
         candidate_confirm_frames = max(2, self.target_confirm_frames - 1)
         if (current_target and confirm_count >= candidate_confirm_frames and
                 now >= self.candidate_cooldown_until):
@@ -760,7 +858,19 @@ class Xunfei2026RoomDeliveryManager(object):
         elif not current_target:
             self.candidate_event.clear()
         if current_target and confirm_count >= self.target_confirm_frames:
-            snapshot = {"ocr": dict(payload), "pose": tuple(pose)}
+            with self.lock:
+                odom_yaw = self.odom_yaw
+                segment_index = self.active_wall_segment_index
+            expected_wall_yaw = self.wall_route_yaws[
+                max(0, min(segment_index, len(self.wall_route_yaws) - 1))]
+            snapshot = {
+                "ocr": dict(payload), "pose": tuple(pose),
+                "odom_yaw": odom_yaw,
+                "expected_wall_yaw": expected_wall_yaw,
+            }
+            wall_geometry = self.target_wall_geometry(payload, pose)
+            if wall_geometry is not None:
+                snapshot["wall_geometry"] = wall_geometry
             with self.lock:
                 self.target_snapshot = snapshot
                 self.parking_target_ocr = dict(payload)
@@ -835,6 +945,34 @@ class Xunfei2026RoomDeliveryManager(object):
         command.angular.z = next_wz
         self.cmd_pub.publish(command)
         self.direct_cmd = [next_vx, next_vy, next_wz]
+        self.direct_cmd_stamp = now
+        return command
+
+    def publish_parking_command(self, vx=0.0, vy=0.0, wz=0.0):
+        """Smooth normal docking motion without delaying a collision guard."""
+        now = time.monotonic()
+        targets = [float(vx), float(vy), float(wz)]
+        if self.parking_guard_active:
+            next_values = targets
+        else:
+            dt = clamp(now - self.direct_cmd_stamp, 0.02, 0.12)
+            limits = [self.parking_accel_x * dt,
+                      self.parking_accel_y * dt,
+                      self.parking_accel_wz * dt]
+            next_values = []
+            for current, target, limit in zip(
+                    self.direct_cmd, targets, limits):
+                # A stop or direction reversal is applied immediately.  Only
+                # normal acceleration is softened, so cone clearance is never
+                # consumed while waiting for a cosmetic ramp.
+                if abs(target) < 1.0e-6 or current * target < 0.0:
+                    next_values.append(0.0)
+                else:
+                    next_values.append(self.slew_value(current, target, limit))
+        command = Twist()
+        command.linear.x, command.linear.y, command.angular.z = next_values
+        self.cmd_pub.publish(command)
+        self.direct_cmd = list(next_values)
         self.direct_cmd_stamp = now
         return command
 
@@ -1026,7 +1164,14 @@ class Xunfei2026RoomDeliveryManager(object):
 
     def current_pose(self):
         with self.lock:
-            return None if self.pose is None else tuple(self.pose)
+            if self.pose is None:
+                return None
+            pose = tuple(self.pose)
+            if self.pose_odom_yaw is None or self.odom_yaw is None:
+                return pose
+            live_yaw = norm_angle(
+                pose[2] + norm_angle(self.odom_yaw - self.pose_odom_yaw))
+            return (pose[0], pose[1], live_yaw, pose[3])
 
     def make_plan_exists(self, x, y, yaw):
         pose = self.current_pose()
@@ -1061,9 +1206,10 @@ class Xunfei2026RoomDeliveryManager(object):
         return None
 
     def send_goal(self, x, y, yaw, name, timeout, watch_target=True,
-                  success_y_below=None):
+                  success_y_below=None, max_path_deviation=None):
         goal = MoveBaseGoal()
         goal.target_pose = self.pose_message(x, y, yaw)
+        corridor_start = self.current_pose()
         self.move_base.send_goal(goal)
         self.publish_state("NAVIGATING", goal=name, x=x, y=y, yaw=yaw)
         started = time.monotonic()
@@ -1106,6 +1252,30 @@ class Xunfei2026RoomDeliveryManager(object):
                 return "FAILED_{}".format(state)
             now = time.monotonic()
             pose = self.current_pose()
+            if (max_path_deviation is not None and pose is not None and
+                    corridor_start is not None):
+                sx, sy = corridor_start[0], corridor_start[1]
+                segment_x = x - sx
+                segment_y = y - sy
+                length_sq = segment_x * segment_x + segment_y * segment_y
+                if length_sq <= 1.0e-6:
+                    cross_track = math.hypot(pose[0] - sx, pose[1] - sy)
+                else:
+                    projection = clamp(
+                        ((pose[0] - sx) * segment_x +
+                         (pose[1] - sy) * segment_y) / length_sq,
+                        0.0, 1.0)
+                    nearest_x = sx + projection * segment_x
+                    nearest_y = sy + projection * segment_y
+                    cross_track = math.hypot(
+                        pose[0] - nearest_x, pose[1] - nearest_y)
+                if cross_track > max_path_deviation:
+                    self.move_base.cancel_goal()
+                    self.stop_robot(4)
+                    self.publish_state(
+                        "PLANNED_PATH_DEVIATION_CANCELLED", goal=name,
+                        deviation=cross_track, limit=max_path_deviation)
+                    return "DEVIATED"
             if (success_y_below is not None and pose is not None and
                     pose[1] <= success_y_below):
                 self.move_base.cancel_goal()
@@ -1244,6 +1414,30 @@ class Xunfei2026RoomDeliveryManager(object):
 
     def predictive_motion_guard(self, vx, vy, wz, wall_distance, context):
         """Keep the largest safe lateral command before a cone reaches the body."""
+        if abs(vy) > 1.0e-4:
+            corner = self.front_corner_lateral_clearance(
+                vy, front_wall_distance=wall_distance)
+            if (corner is not None and
+                    corner[0] < self.front_corner_lateral_slow_gap):
+                original_vy = vy
+                scale = clamp(
+                    (corner[0] - self.front_corner_lateral_hard_gap) /
+                    max(0.02, self.front_corner_lateral_slow_gap -
+                        self.front_corner_lateral_hard_gap), 0.0, 1.0)
+                # Keep enough lateral motion for the downstream predictive
+                # glide to generate a short diagonal pass.  Reducing vy to zero
+                # here suppresses that recovery and deadlocks beside the cone.
+                if corner[0] > self.front_corner_lateral_hard_gap:
+                    scale = max(scale, self.front_corner_lateral_min_scale)
+                vy *= scale
+                # Do not sweep the same threatened front corner while passing.
+                if wz * corner[2] < 0.0:
+                    wz = 0.0
+                rospy.logwarn_throttle(
+                    0.30, "%s_FRONT_CORNER_LATERAL_SLOW gap=%.3f "
+                    "point=(%.3f,%.3f) vy=%.3f->%.3f",
+                    context, corner[0], corner[1], corner[2],
+                    original_vy, vy)
         threat = self.predicted_footprint_clearance(
             vx, vy, wz, front_wall_distance=wall_distance)
         if threat is None or threat[0] > 1.0e-6:
@@ -1296,6 +1490,28 @@ class Xunfei2026RoomDeliveryManager(object):
             context, threat[2], threat[3], threat[1], safe_scale,
             vx, vy, wz, escape_vx, guarded_vy)
         return escape_vx, guarded_vy, 0.0
+
+    def front_corner_lateral_clearance(self, vy, front_wall_distance=None):
+        """Closest return beside the front corner in the lateral direction."""
+        samples, stamp = self.scan_snapshot()
+        if time.monotonic() - stamp > self.sweep_sensor_fresh_s:
+            return None
+        closest = None
+        for _, _, x_base, y_base in samples:
+            if x_base < 0.0:
+                continue
+            if (vy > 0.0 and y_base <= 0.0) or (vy < 0.0 and y_base >= 0.0):
+                continue
+            if front_wall_distance is not None:
+                x_laser, _ = self.base_to_laser(x_base, y_base)
+                if abs(x_laser - front_wall_distance) <= 0.055:
+                    continue
+            dx = max(x_base - self.robot_half_length, 0.0)
+            dy = max(abs(y_base) - self.robot_half_width, 0.0)
+            gap = math.hypot(dx, dy)
+            if closest is None or gap < closest[0]:
+                closest = (gap, x_base, y_base)
+        return closest
 
     def side_escape_velocity(self, threat, context):
         if threat is None or abs(threat[1]) < 0.03:
@@ -2438,7 +2654,7 @@ class Xunfei2026RoomDeliveryManager(object):
                 self.prepark_center_stable_frames, command_wz, clearance)
             if stable >= self.prepark_center_stable_frames:
                 self.stop_robot(12)
-                rospy.sleep(0.4)
+                rospy.sleep(max(0.0, self.prepark_settle_s))
                 self.publish_state(
                     "PREPARK_TARGET_ALIGNED", pixel_error=pixel_error)
                 return True
@@ -2446,6 +2662,93 @@ class Xunfei2026RoomDeliveryManager(object):
         self.stop_robot(12)
         self.publish_state("PREPARK_ALIGNMENT_TIMEOUT")
         return False
+
+    def refresh_centered_target_wall(self):
+        """Lock the physical wall only after the requested sign is centered."""
+        estimates = []
+        deadline = time.monotonic() + max(0.20, self.preparking_wall_lock_s)
+        while not rospy.is_shutdown() and time.monotonic() < deadline:
+            estimate = self.front_wall_estimate()
+            if estimate is not None:
+                estimates.append(estimate)
+            self.cmd_pub.publish(Twist())
+            rospy.sleep(0.05)
+
+        pose = self.current_pose()
+        with self.lock:
+            live = None if self.latest_ocr is None else dict(self.latest_ocr)
+            locked = (None if self.parking_target_ocr is None else
+                      dict(self.parking_target_ocr))
+            odom_yaw = self.odom_yaw
+            segment_index = self.active_wall_segment_index
+        def valid_target_payload(value):
+            return (
+                isinstance(value, dict) and
+                bool(value.get("stable", False)) and
+                value.get("label") == self.target_warehouse and
+                value.get("frame_label") == self.target_warehouse)
+
+        payload = live if valid_target_payload(live) else locked
+        payload_valid = valid_target_payload(payload)
+        if pose is None or not payload_valid or not estimates:
+            self.publish_state(
+                "CENTERED_TARGET_WALL_LOCK_FAILED",
+                pose_ready=(pose is not None), ocr_ready=payload_valid,
+                wall_samples=len(estimates))
+            return False
+
+        wall_distance = self.median([value[0] for value in estimates])
+        wall_heading = self.median([value[1] for value in estimates])
+        if (wall_distance is None or wall_heading is None or
+                not self.parking_initial_wall_min <= wall_distance <=
+                self.wall_fit_max_range):
+            self.publish_state(
+                "CENTERED_TARGET_WALL_LOCK_REJECTED",
+                wall_distance=wall_distance, wall_heading=wall_heading)
+            return False
+
+        # front_wall_estimate reports the wall slope in body coordinates.  The
+        # perpendicular chassis yaw is therefore the current yaw minus that
+        # slope.  Move only along this measured normal to the pre-parking
+        # standoff; approximate room coordinates are intentionally not used.
+        goal_yaw = norm_angle(pose[2] - wall_heading)
+        normal_travel = wall_distance - self.wall_standoff
+        goal_x = pose[0] + normal_travel * math.cos(goal_yaw)
+        goal_y = pose[1] + normal_travel * math.sin(goal_yaw)
+        if abs(normal_travel) > self.planned_preparking_max_translation:
+            self.publish_state(
+                "CENTERED_TARGET_WALL_TOO_FAR",
+                wall_distance=wall_distance, travel=normal_travel,
+                limit=self.planned_preparking_max_translation)
+            return False
+
+        expected_wall_yaw = self.wall_route_yaws[
+            max(0, min(segment_index, len(self.wall_route_yaws) - 1))]
+        snapshot = {
+            "ocr": dict(payload), "pose": tuple(pose),
+            "odom_yaw": odom_yaw,
+            "expected_wall_yaw": expected_wall_yaw,
+            "wall_geometry": {
+                "goal_x": goal_x, "goal_y": goal_y,
+                "goal_yaw": goal_yaw,
+                "wall_distance": wall_distance,
+                "wall_span": 0.0, "wall_residual": 0.0,
+                "wall_points": max(value[2] for value in estimates),
+                "bearing": 0.0,
+                "source": "centered_front_lidar",
+            },
+        }
+        with self.lock:
+            self.target_snapshot = snapshot
+            self.parking_target_ocr = dict(payload)
+            self.parking_target_stamp = time.monotonic()
+            self.parking_target_wall_yaw = goal_yaw
+        self.publish_state(
+            "CENTERED_TARGET_WALL_LOCKED", wall_distance=wall_distance,
+            wall_heading=wall_heading, approach_x=goal_x,
+            approach_y=goal_y, approach_yaw=goal_yaw,
+            samples=len(estimates))
+        return True
 
     def visit_scan_point(self, point):
         name, x, y, start_yaw, end_yaw, fallback = point
@@ -2498,6 +2801,121 @@ class Xunfei2026RoomDeliveryManager(object):
             return None
         return min(candidates, key=lambda value: value[0])
 
+    def target_wall_geometry(self, ocr, pose):
+        """Fit the physical wall seen along the confirmed sign bearing."""
+        bbox = ocr.get("bbox") if isinstance(ocr, dict) else None
+        width = float(ocr.get("image_width", 0) or 0) if isinstance(
+            ocr, dict) else 0.0
+        if (not isinstance(bbox, (list, tuple)) or len(bbox) < 4 or
+                width <= 1.0 or pose is None):
+            return None
+        center = 0.5 * (float(bbox[0]) + float(bbox[2]))
+        normalized = clamp(
+            (center - 0.5 * width) / max(1.0, 0.5 * width), -1.0, 1.0)
+        bearing = (self.camera_bearing_sign * normalized *
+                   0.5 * self.camera_hfov)
+        samples, stamp = self.scan_snapshot()
+        if time.monotonic() - stamp > self.sweep_sensor_fresh_s:
+            return None
+        candidates = [
+            sample for sample in samples
+            if abs(norm_angle(sample[0] - bearing)) <= math.radians(22.0)
+            and 0.22 <= sample[1] <= 2.2
+        ]
+        if len(candidates) < 8:
+            return None
+
+        clusters = []
+        current = []
+        for sample in candidates:
+            if current:
+                gap = math.hypot(
+                    sample[2] - current[-1][2],
+                    sample[3] - current[-1][3])
+                if gap > 0.11:
+                    if len(current) >= 8:
+                        clusters.append(current)
+                    current = []
+            current.append(sample)
+        if len(current) >= 8:
+            clusters.append(current)
+
+        ray_x = math.cos(bearing)
+        ray_y = math.sin(bearing)
+        best = None
+        for cluster in clusters:
+            count = float(len(cluster))
+            mean_x = sum(value[2] for value in cluster) / count
+            mean_y = sum(value[3] for value in cluster) / count
+            sxx = sum((value[2] - mean_x) ** 2 for value in cluster) / count
+            syy = sum((value[3] - mean_y) ** 2 for value in cluster) / count
+            sxy = sum((value[2] - mean_x) * (value[3] - mean_y)
+                      for value in cluster) / count
+            tangent_angle = 0.5 * math.atan2(2.0 * sxy, sxx - syy)
+            tangent_x = math.cos(tangent_angle)
+            tangent_y = math.sin(tangent_angle)
+            normal_x = -tangent_y
+            normal_y = tangent_x
+            line_distance = normal_x * mean_x + normal_y * mean_y
+            if line_distance < 0.0:
+                normal_x = -normal_x
+                normal_y = -normal_y
+                line_distance = -line_distance
+            residuals = [abs(normal_x * value[2] + normal_y * value[3] -
+                             line_distance) for value in cluster]
+            residual = self.median(residuals)
+            projections = [
+                tangent_x * (value[2] - mean_x) +
+                tangent_y * (value[3] - mean_y) for value in cluster]
+            span = max(projections) - min(projections)
+            denominator = normal_x * ray_x + normal_y * ray_y
+            if (residual is None or residual > 0.035 or span < 0.24 or
+                    denominator <= 0.20):
+                continue
+            ray_distance = line_distance / denominator
+            if not 0.22 <= ray_distance <= 2.2:
+                continue
+            wall_x = ray_distance * ray_x
+            wall_y = ray_distance * ray_y
+            along = (tangent_x * (wall_x - mean_x) +
+                     tangent_y * (wall_y - mean_y))
+            if abs(along) > 0.6 * span + 0.12:
+                continue
+            score = span - 4.0 * residual - 0.05 * ray_distance
+            if best is None or score > best[0]:
+                best = (score, wall_x, wall_y, normal_x, normal_y,
+                        ray_distance, span, residual, len(cluster))
+        if best is None:
+            return None
+
+        _, wall_x, wall_y, normal_x, normal_y, ray_distance, span, residual, count = best
+        local_goal_x = wall_x - normal_x * self.wall_standoff
+        local_goal_y = wall_y - normal_y * self.wall_standoff
+        cosine = math.cos(pose[2])
+        sine = math.sin(pose[2])
+        goal_x = pose[0] + cosine * local_goal_x - sine * local_goal_y
+        goal_y = pose[1] + sine * local_goal_x + cosine * local_goal_y
+        goal_yaw = norm_angle(pose[2] + math.atan2(normal_y, normal_x))
+        # During a corner turn OCR can still see the previous wall while the
+        # route index already points at the next wall.  Validate the fitted
+        # wall by physical room containment instead of the route heading.
+        room_margin = 0.06
+        if not (self.room_min_x + room_margin <= goal_x <=
+                self.room_max_x - room_margin and
+                self.room_min_y + room_margin <= goal_y <=
+                self.room_max_y - room_margin):
+            rospy.logwarn(
+                "TARGET_WALL_LIDAR_REJECTED_OUTSIDE_ROOM goal=(%.3f,%.3f) "
+                "yaw=%.1fdeg; using room-wall projection",
+                goal_x, goal_y, math.degrees(goal_yaw))
+            return None
+        return {
+            "goal_x": goal_x, "goal_y": goal_y, "goal_yaw": goal_yaw,
+            "wall_distance": ray_distance, "wall_span": span,
+            "wall_residual": residual, "wall_points": count,
+            "bearing": bearing,
+        }
+
     def target_approach_goal(self):
         with self.lock:
             snapshot = None if self.target_snapshot is None else dict(
@@ -2505,6 +2923,21 @@ class Xunfei2026RoomDeliveryManager(object):
         if snapshot is None:
             return None
         pose = snapshot["pose"]
+        geometry = snapshot.get("wall_geometry")
+        if isinstance(geometry, dict):
+            goal_x = float(geometry["goal_x"])
+            goal_y = float(geometry["goal_y"])
+            goal_yaw = float(geometry["goal_yaw"])
+            self.parking_target_wall_yaw = goal_yaw
+            self.publish_state(
+                "TARGET_WALL_LIDAR_LOCKED", approach_x=goal_x,
+                approach_y=goal_y, approach_yaw=goal_yaw,
+                wall_distance=geometry.get("wall_distance"),
+                wall_span=geometry.get("wall_span"),
+                wall_residual=geometry.get("wall_residual"),
+                wall_points=geometry.get("wall_points"))
+            return goal_x, goal_y, goal_yaw
+
         ocr = snapshot["ocr"]
         bbox = ocr.get("bbox")
         width = float(ocr.get("image_width", 1280) or 1280)
@@ -2523,6 +2956,7 @@ class Xunfei2026RoomDeliveryManager(object):
         goal_x = wall_x + normal[0] * self.wall_standoff
         goal_y = wall_y + normal[1] * self.wall_standoff
         goal_yaw = math.atan2(-normal[1], -normal[0])
+        self.parking_target_wall_yaw = goal_yaw
         self.publish_state(
             "TARGET_WALL_PROJECTED", pixel_x=pixel_x, image_width=width,
             wall_x=wall_x, wall_y=wall_y, approach_x=goal_x,
@@ -2574,25 +3008,66 @@ class Xunfei2026RoomDeliveryManager(object):
         return True
 
     def approach_target(self):
-        self.stop_robot(12)
+        # Always lock the physical wall orientation, even when the optional
+        # move_base pre-positioning stage is disabled.
         projected = self.target_approach_goal()
+        if not self.planned_preparking_enabled:
+            self.publish_state("PLANNED_PREPARK_DISABLED_PARK_DIRECT")
+            return False
+        self.smooth_stop_robot()
         if projected is None:
             self.publish_state("TARGET_PROJECTION_UNAVAILABLE_PARK_DIRECT")
-            return True
-        selected = self.nearest_reachable(*projected)
+            return False
+
+        # Keep alternative goals on the same wall standoff line.  A radial
+        # nearest-point search can jump toward another wall or behind the sign,
+        # which defeats the purpose of visual pre-positioning.
+        px, py, pyaw = projected
+        tangent_x = -math.sin(pyaw)
+        tangent_y = math.cos(pyaw)
+        offsets = [0.0]
+        search = max(0.0, self.planned_preparking_tangent_search)
+        if search > 0.01:
+            offsets.extend((0.5 * search, -0.5 * search, search, -search))
+        selected = None
+        for offset in offsets:
+            candidate = (px + tangent_x * offset,
+                         py + tangent_y * offset, pyaw)
+            if self.make_plan_exists(*candidate):
+                selected = candidate
+                break
         if selected is None:
             self.publish_state("TARGET_APPROACH_UNREACHABLE_PARK_DIRECT")
+            return False
+        pose = self.current_pose()
+        if (pose is not None and math.hypot(
+                projected[0] - pose[0], projected[1] - pose[1]) >
+                self.planned_preparking_max_translation):
+            self.publish_state(
+                "PLANNED_PREPARK_PROJECTION_TOO_FAR_PARK_DIRECT",
+                distance=math.hypot(projected[0] - pose[0],
+                                    projected[1] - pose[1]),
+                limit=self.planned_preparking_max_translation)
+            return False
+        if (pose is not None and
+                math.hypot(selected[0] - pose[0], selected[1] - pose[1]) < 0.12 and
+                abs(norm_angle(selected[2] - pose[2])) < math.radians(8.0)):
+            self.publish_state("PLANNED_PREPARK_ALREADY_REACHED",
+                               x=selected[0], y=selected[1], yaw=selected[2])
             return True
+        self.publish_state("PLANNED_PREPARK_START", x=selected[0],
+                           y=selected[1], yaw=selected[2],
+                           timeout=self.planned_preparking_timeout,
+                           purpose="rough_visual_centerline_then_direct_parking",
+                           corridor=self.planned_preparking_corridor)
         result = self.send_goal(
             selected[0], selected[1], selected[2], "target_wall_approach",
-            self.goal_timeout, watch_target=False)
-        if result != "SUCCEEDED":
-            self.clear_and_wait("target approach {}".format(result))
-            result = self.send_goal(
-                selected[0], selected[1], selected[2],
-                "target_wall_approach_retry", self.goal_timeout,
-                watch_target=False)
-        self.stop_robot(12)
+            min(self.goal_timeout, self.planned_preparking_timeout),
+            watch_target=False,
+            max_path_deviation=self.planned_preparking_corridor)
+        self.smooth_stop_robot()
+        self.publish_state("PLANNED_PREPARK_COMPLETE", result=result,
+                           fallback_to_direct=(result != "SUCCEEDED"))
         return result == "SUCCEEDED"
 
     def handoff_directly_to_parking(self):
@@ -2617,7 +3092,7 @@ class Xunfei2026RoomDeliveryManager(object):
         return float(center), width
 
     def parking_center_observation_valid(self, payload):
-        """Reject edge-clipped OCR boxes before they corrupt parking center."""
+        """Accept a clipped target as directional evidence during centering."""
         if not isinstance(payload, dict):
             return False
         bbox = payload.get("bbox")
@@ -2627,12 +3102,25 @@ class Xunfei2026RoomDeliveryManager(object):
         if (not isinstance(bbox, (list, tuple)) or len(bbox) < 4 or
                 width <= 1.0 or height <= 1.0):
             return False
+        try:
+            left, top, right, bottom = [float(value) for value in bbox[:4]]
+        except (TypeError, ValueError):
+            return False
+        values = (left, top, right, bottom)
+        return (all(math.isfinite(value) for value in values) and
+                right - left >= 4.0 and bottom - top >= 4.0 and
+                right >= 0.0 and left <= width and
+                bottom >= 0.0 and top <= height)
+
+    def parking_center_horizontally_complete(self, payload):
+        """Require horizontal visibility before declaring parking centered."""
+        if not self.parking_center_observation_valid(payload):
+            return False
+        bbox = payload.get("bbox")
+        width = float(payload.get("image_width", 0) or 0)
         margin_x = self.target_edge_margin_ratio * width
-        margin_y = self.target_vertical_edge_margin_ratio * height
         return (float(bbox[0]) >= margin_x and
-                float(bbox[2]) <= width - margin_x and
-                float(bbox[1]) >= margin_y and
-                float(bbox[3]) <= height - margin_y)
+                float(bbox[2]) <= width - margin_x)
 
     def locked_parking_target_center(self):
         now = time.monotonic()
@@ -2711,12 +3199,14 @@ class Xunfei2026RoomDeliveryManager(object):
             self.parking_active = False
             self.parking_wrong_label = ""
             self.target_snapshot = None
+            self.parking_target_wall_yaw = None
             self.parking_target_ocr = None
             self.parking_target_stamp = 0.0
             self.parking_center_filtered = None
             self.parking_center_width = 0.0
             self.parking_center_source_stamp = 0.0
             self.parking_center_aligned = False
+            self.parking_center_lock_odom_pose = None
             self.target_confirm_count = 0
             self.candidate_cooldown_until = (
                 time.monotonic() + self.candidate_cooldown_s)
@@ -2851,6 +3341,11 @@ class Xunfei2026RoomDeliveryManager(object):
         samples, stamp = self.scan_snapshot()
         if time.monotonic() - stamp > self.sweep_sensor_fresh_s:
             return None
+        pose = self.current_pose()
+        expected_heading = None
+        if pose is not None and self.parking_target_wall_yaw is not None:
+            expected_heading = norm_angle(
+                self.parking_target_wall_yaw - pose[2])
         points = []
         sector = math.radians(55.0)
         for _, _, x_base, y_base in samples:
@@ -2877,6 +3372,14 @@ class Xunfei2026RoomDeliveryManager(object):
                 slope = (x2 - x1) / dy
                 intercept = x1 - slope * y1
                 scale = math.sqrt(1.0 + slope * slope)
+                heading = -math.atan(slope)
+                heading_deviation = 0.0
+                if expected_heading is not None:
+                    heading_deviation = abs(norm_angle(
+                        heading - expected_heading))
+                    if (heading_deviation >
+                            self.parking_wall_heading_prior_tolerance):
+                        continue
                 inliers = [
                     point for point in points
                     if abs(point[0] - slope * point[1] - intercept) /
@@ -2893,7 +3396,12 @@ class Xunfei2026RoomDeliveryManager(object):
                 span = max(projected) - min(projected)
                 if span < 0.20:
                     continue
-                score = len(inliers) + 12.0 * span
+                # OCR centering has already locked the physical sign wall.
+                # Prefer a line consistent with that yaw so a diagonal side
+                # wall or a row of cone returns cannot trigger a second large
+                # rotation and throw the sign back out of the image.
+                score = (len(inliers) + 12.0 * span -
+                         30.0 * heading_deviation)
                 if score > best_score:
                     best_score = score
                     best = inliers
@@ -2933,19 +3441,24 @@ class Xunfei2026RoomDeliveryManager(object):
         return {"map_x": pose[0], "map_y": pose[1], "map_yaw": pose[2]}
 
     def parking_commands(self, allow_forward):
+        self.parking_guard_active = False
         wall = self.parking_front_wall_estimate()
         if wall is None:
             return None
         wall_distance, heading_error, points = wall
         target = self.locked_parking_target_center()
 
-        wz = clamp(self.parking_heading_kp * heading_error,
-                   -self.parking_max_wz, self.parking_max_wz)
-        if (abs(heading_error) > self.parking_heading_tolerance and
-                abs(wz) < self.parking_min_wz):
-            wz = math.copysign(self.parking_min_wz, heading_error)
-        if abs(heading_error) <= self.parking_heading_tolerance:
-            wz = 0.0
+        if self.parking_heading_correction_active:
+            if abs(heading_error) <= self.parking_heading_release_tolerance:
+                self.parking_heading_correction_active = False
+        elif abs(heading_error) > self.parking_heading_tolerance:
+            self.parking_heading_correction_active = True
+        wz = 0.0
+        if self.parking_heading_correction_active:
+            wz = clamp(self.parking_heading_kp * heading_error,
+                       -self.parking_max_wz, self.parking_max_wz)
+            if abs(wz) < self.parking_min_wz:
+                wz = math.copysign(self.parking_min_wz, heading_error)
 
         pixel_error = 0.0
         target_live = False
@@ -2977,93 +3490,89 @@ class Xunfei2026RoomDeliveryManager(object):
         if allow_forward:
             vy = clamp(vy, -self.parking_approach_max_vy,
                        self.parking_approach_max_vy)
+        visual_frozen = allow_forward and self.parking_center_aligned
+        if visual_frozen:
+            # Phase 1 has already established the sign centerline.  Preserve
+            # that physical line for the complete final approach; OCR boxes can
+            # jump or clip long before the sign naturally leaves the camera.
+            vy = 0.0
+            rospy.logwarn_throttle(
+                0.5, "IN_PROCESS_PARKING_CENTERLINE_LOCKED_STRAIGHT_APPROACH "
+                "wall=%.3f pixel=%.1f", wall_distance, pixel_error)
         requested_vy = vy
         vy = self.parking_side_guard(vy, wall_distance)
+        if abs(vy - requested_vy) > 1.0e-4:
+            self.parking_guard_active = True
         self.parking_lateral_requested = requested_vy
         self.parking_lateral_guarded = vy
         requested_wz = wz
         wz, turn_blocker = self.parking_rotation_guard(wz)
+        if abs(wz - requested_wz) > 1.0e-4:
+            self.parking_guard_active = True
 
         vx = 0.0
         distance_error = wall_distance - self.parking_wall_distance
         side_blocked = (abs(requested_vy) > 1.0e-4 and abs(vy) < 1.0e-4)
         blocker = self.parking_side_blocker
-        if (not allow_forward and side_blocked and blocker is not None and
-                blocker[1] < -0.35 * self.robot_half_length and
-                wall_distance >= self.parking_rear_clear_wall_min):
-            front = self.parking_raw_sector_clearance(
-                0.0, math.radians(16.0))
-            if front is not None and front >= self.parking_rear_clear_front_min:
-                vx = self.parking_rear_clear_nudge_speed
-                rospy.logwarn_throttle(
-                    0.4, "IN_PROCESS_PARKING_REAR_CORNER_CLEAR "
-                    "gap=%.3f point=(%.3f,%.3f) vx=%.3f",
-                    blocker[0], blocker[1], blocker[2], vx)
-        if (side_blocked and blocker is not None and
-                blocker[1] > 0.03):
-            escape = self.side_escape_velocity(blocker, "PARKING")
-            if escape < -1.0e-4:
-                vx = escape
-        # A cone just outside a rectangular corner can reduce lateral velocity
-        # to a few millimetres per second without making it exactly zero.  That
-        # is a deadlock, not useful caution.  Flow around the compact obstacle:
-        # move longitudinally according to whether it is beside the front or
-        # rear half, while also moving laterally away from it.  Sensor feedback
-        # ends the manoeuvre as soon as the side gap opens; no fixed retreat
-        # distance is used.
+        # Parking rule: if the requested lateral path is squeezed by a cone,
+        # cancel lateral motion and move forward only.  The command remains
+        # sensor-driven: it stops as soon as the side opens, or earlier if the
+        # front wall/obstacle reaches the protected clearance.
         lateral_deadlock = (
             abs(requested_vy) >= self.parking_min_vy and
-            abs(vy) < self.parking_recovery_trigger_vy and
+            (side_blocked or
+             abs(vy) < max(self.parking_recovery_trigger_vy,
+                           0.55 * abs(requested_vy))) and
             blocker is not None)
-        if lateral_deadlock:
-            original_blocker = blocker
-            escape_vx = self.side_escape_velocity(
-                original_blocker, "PARKING_CENTER")
-            if (escape_vx > 0.0 and
-                    wall_distance <= self.parking_wall_distance +
-                    self.parking_forward_escape_margin):
-                escape_vx = 0.0
-            away_vy = -math.copysign(
-                self.parking_escape_lateral_speed, original_blocker[2])
-            away_vy = self.parking_side_guard(away_vy, wall_distance)
-            self.parking_side_blocker = original_blocker
+        if lateral_deadlock and not allow_forward:
+            self.parking_guard_active = True
             vy = 0.0
-            if abs(away_vy) >= 1.0e-4:
-                vy = away_vy
-            vx = escape_vx
+            front = self.parking_raw_sector_clearance(
+                0.0, math.radians(16.0))
+            forward_clear = (
+                wall_distance >= self.parking_forward_escape_wall_min and
+                front is not None and
+                front >= self.parking_rear_clear_front_min)
+            vx = self.parking_rear_clear_nudge_speed if forward_clear else 0.0
             rospy.logwarn_throttle(
-                0.4, "IN_PROCESS_PARKING_CONE_FLOW gap=%.3f "
+                0.4, "IN_PROCESS_PARKING_CONE_BLOCK_FORWARD_ONLY gap=%.3f "
                 "point=(%.3f,%.3f) requested_vy=%.3f guarded_vy=%.3f "
-                "escape=(%.3f,%.3f)", original_blocker[0],
-                original_blocker[1], original_blocker[2], requested_vy,
-                self.parking_lateral_guarded, vx, vy)
+                "front=%s wall=%.3f vx=%.3f",
+                blocker[0], blocker[1], blocker[2], requested_vy,
+                self.parking_lateral_guarded,
+                "none" if front is None else "{:.3f}".format(front),
+                wall_distance, vx)
         turn_blocked = (abs(requested_wz) > 1.0e-4 and abs(wz) < 1.0e-4)
         if (not allow_forward and turn_blocked and turn_blocker is not None and
-                wall_distance >= self.parking_rear_clear_wall_min):
+                wall_distance >= self.parking_forward_escape_wall_min):
+            self.parking_guard_active = True
             front = self.parking_raw_sector_clearance(
                 0.0, math.radians(16.0))
             if front is not None and front >= self.parking_rear_clear_front_min:
                 vx = max(vx, self.parking_rear_clear_nudge_speed)
         target_centered_for_motion = (
-            target is not None and
-            target_age <= self.parking_target_reacquire_s and
-            abs(pixel_error) <= self.parking_recenter_threshold)
+            visual_frozen or
+            (target is not None and
+             target_age <= self.parking_target_reacquire_s and
+             abs(pixel_error) <= self.parking_forward_center_gate))
         if (allow_forward and target_centered_for_motion and
-                abs(heading_error) <= math.radians(8.0)):
+                abs(heading_error) <= self.parking_final_heading_gate):
             front = self.parking_raw_sector_clearance(
                 0.0, math.radians(12.0))
-            if (front is not None and front <= self.parking_front_emergency):
+            if distance_error < -self.parking_wall_tolerance:
+                # Front emergency clearance forbids further approach, not a
+                # guarded retreat away from the wall.
+                vx = self.guard_reverse_velocity(
+                    -self.parking_reverse_correction_speed,
+                    "IN_PROCESS_PARKING_FINAL")
+            elif (front is not None and
+                  front <= self.parking_front_emergency):
                 vx = 0.0
             elif distance_error > self.parking_wall_tolerance:
                 ratio = clamp(distance_error / max(
                     self.parking_slow_distance, 1.0e-3), 0.0, 1.0)
                 vx = (self.parking_slow_vx +
                       ratio * (self.parking_fast_vx - self.parking_slow_vx))
-            elif distance_error < -self.parking_wall_tolerance:
-                # Never reverse during final parking for a centimetre-scale
-                # overshoot.  A blind correction can sweep the rear corners
-                # into a cone that was safely behind the chassis.
-                vx = 0.0
 
         # During initial acquisition a large yaw correction sweeps the long
         # rectangular corners.  Complete that rotation before translating.
@@ -3072,8 +3581,12 @@ class Xunfei2026RoomDeliveryManager(object):
             vx = 0.0
             vy = 0.0
 
+        guarded_input = (vx, vy, wz)
         vx, vy, wz = self.predictive_motion_guard(
             vx, vy, wz, wall_distance, "IN_PROCESS_PARKING")
+        if any(abs(a - b) > 1.0e-4 for a, b in zip(
+                guarded_input, (vx, vy, wz))):
+            self.parking_guard_active = True
 
         return (vx, vy, wz, wall_distance, heading_error, points,
                 pixel_error, target_live, target_age)
@@ -3087,6 +3600,59 @@ class Xunfei2026RoomDeliveryManager(object):
                            target=self.target_warehouse)
         deadline = time.monotonic() + self.parking_timeout
         self.parking_center_aligned = False
+        self.parking_center_lock_odom_pose = None
+        self.parking_heading_correction_active = False
+        if self.parking_target_wall_yaw is not None:
+            self.publish_state(
+                "TARGET_SIGN_WALL_ORIENTATION_LOCKED",
+                target_yaw=self.parking_target_wall_yaw)
+            orientation_result = self.turn_to_wall(
+                "target_sign_wall", self.parking_target_wall_yaw,
+                watch_ocr=False)
+            self.publish_state(
+                "TARGET_SIGN_WALL_ORIENTATION_COMPLETE",
+                result=orientation_result,
+                target_yaw=self.parking_target_wall_yaw)
+            if orientation_result != "SUCCEEDED":
+                self.smooth_stop_robot()
+                with self.lock:
+                    self.parking_active = False
+                self.publish_state(
+                    "TARGET_SIGN_WALL_ORIENTATION_REACQUIRE",
+                    result=orientation_result)
+                return "REACQUIRE"
+
+        # The planned pre-parking pose should face the physical sign wall at
+        # roughly the configured standoff.  Reject a far/incorrect wall model
+        # before any long lateral motion can carry the car toward another wall.
+        initial_estimates = []
+        initial_deadline = (time.monotonic() +
+                            max(0.20, self.parking_initial_wall_validation_s))
+        while not rospy.is_shutdown() and time.monotonic() < initial_deadline:
+            estimate = self.front_wall_estimate()
+            if estimate is not None:
+                initial_estimates.append(estimate)
+            self.cmd_pub.publish(Twist())
+            rospy.sleep(0.05)
+        initial_wall = self.median(
+            [value[0] for value in initial_estimates])
+        if (initial_wall is None or
+                not self.parking_initial_wall_min <= initial_wall <=
+                self.parking_initial_wall_max):
+            self.smooth_stop_robot()
+            with self.lock:
+                self.parking_active = False
+            self.publish_state(
+                "IN_PROCESS_PARKING_INITIAL_WALL_REJECTED",
+                wall_distance=initial_wall,
+                minimum=self.parking_initial_wall_min,
+                maximum=self.parking_initial_wall_max,
+                samples=len(initial_estimates),
+                **self.parking_pose_values())
+            return "REACQUIRE"
+        self.publish_state(
+            "IN_PROCESS_PARKING_INITIAL_WALL_VALIDATED",
+            wall_distance=initial_wall, samples=len(initial_estimates))
 
         # Phase 1: first become perpendicular and place the requested sign on
         # the camera centerline.  Never rush forward while a clipped sign is at
@@ -3094,7 +3660,19 @@ class Xunfei2026RoomDeliveryManager(object):
         # out-of-box final pose.
         align_stable = 0
         rate = rospy.Rate(20)
-        while not rospy.is_shutdown() and time.monotonic() < deadline:
+        align_deadline = min(
+            deadline, time.monotonic() + self.parking_alignment_timeout)
+        progress_stamp = time.monotonic()
+        progress_pose = self.odom_pose
+        best_pixel_error = float("inf")
+        best_heading_error = float("inf")
+        no_progress_count = 0
+        wall_missing_since = None
+        lateral_probe_error = None
+        lateral_probe_pose = None
+        lateral_sign_checked = False
+        last_align_source_stamp = 0.0
+        while not rospy.is_shutdown() and time.monotonic() < align_deadline:
             abort_reason = self.parking_abort_reason()
             if abort_reason:
                 self.smooth_stop_robot()
@@ -3106,6 +3684,9 @@ class Xunfei2026RoomDeliveryManager(object):
                 return abort_reason
             values = self.parking_commands(allow_forward=False)
             if values is None:
+                now = time.monotonic()
+                if wall_missing_since is None:
+                    wall_missing_since = now
                 target = self.locked_parking_target_center()
                 search_wz = 0.0
                 if target is not None:
@@ -3118,20 +3699,130 @@ class Xunfei2026RoomDeliveryManager(object):
                         search_wz = clamp(
                             self.prepark_heading_kp * angular_error,
                             -self.parking_max_wz, self.parking_max_wz)
-                self.publish_direct_command(wz=search_wz)
+                self.publish_parking_command(wz=search_wz)
                 align_stable = 0
                 rospy.logwarn_throttle(
                     0.5, "IN_PROCESS_PARKING_ALIGN waiting wall wz=%.3f",
                     search_wz)
+                if now - wall_missing_since >= self.parking_no_progress_timeout:
+                    self.smooth_stop_robot()
+                    with self.lock:
+                        self.parking_active = False
+                    self.publish_state(
+                        "IN_PROCESS_PARKING_WALL_REACQUIRE_REQUIRED",
+                        wait_s=now - wall_missing_since,
+                        **self.parking_pose_values())
+                    return "REACQUIRE"
                 rate.sleep()
                 continue
+            wall_missing_since = None
             (vx, vy, wz, distance, heading, points, pixel_error,
              target_live, target_age) = values
-            self.publish_direct_command(vx, vy, wz)
-            aligned = (target_age <= self.parking_target_memory_s and
-                       abs(pixel_error) <= self.parking_center_tolerance and
-                       abs(heading) <= self.parking_heading_tolerance)
-            align_stable = align_stable + 1 if aligned else 0
+            now = time.monotonic()
+            with self.lock:
+                odom_pose = self.odom_pose
+            # Verify the body-y/image relationship from real motion once per
+            # parking attempt.  A wrong sign makes the target run farther to
+            # the image edge and can also drive into a cone on that side.
+            if (self.parking_auto_lateral_sign and not lateral_sign_checked and
+                    target_live and not self.parking_heading_correction_active and
+                    abs(vy) >= self.parking_min_vy and abs(wz) < 0.08 and
+                    odom_pose is not None):
+                if lateral_probe_error is None:
+                    lateral_probe_error = pixel_error
+                    lateral_probe_pose = odom_pose
+                elif lateral_probe_pose is not None:
+                    probe_motion = math.hypot(
+                        odom_pose[0] - lateral_probe_pose[0],
+                        odom_pose[1] - lateral_probe_pose[1])
+                    if probe_motion >= self.parking_lateral_probe_distance:
+                        diverged = (
+                            pixel_error * lateral_probe_error > 0.0 and
+                            abs(pixel_error) >= abs(lateral_probe_error) +
+                            self.parking_lateral_divergence)
+                        if diverged:
+                            old_sign = self.parking_lateral_sign
+                            self.parking_lateral_sign = -old_sign
+                            with self.lock:
+                                self.parking_center_filtered = None
+                                self.parking_center_source_stamp = 0.0
+                            self.publish_state(
+                                "IN_PROCESS_PARKING_LATERAL_SIGN_CORRECTED",
+                                old_sign=old_sign,
+                                new_sign=self.parking_lateral_sign,
+                                initial_pixel_error=lateral_probe_error,
+                                current_pixel_error=pixel_error,
+                                probe_motion=probe_motion)
+                            # Re-run both the lateral and cone guards for the
+                            # corrected side before publishing another command.
+                            corrected = self.parking_commands(
+                                allow_forward=False)
+                            if corrected is not None:
+                                (vx, vy, wz, distance, heading, points,
+                                 pixel_error, target_live,
+                                 target_age) = corrected
+                        lateral_sign_checked = True
+            self.publish_parking_command(vx, vy, wz)
+            moved = 0.0
+            if progress_pose is not None and odom_pose is not None:
+                moved = math.hypot(
+                    odom_pose[0] - progress_pose[0],
+                    odom_pose[1] - progress_pose[1])
+            pixel_improved = (abs(pixel_error) <= best_pixel_error -
+                              self.parking_no_progress_pixel_delta)
+            heading_improved = (abs(heading) <= best_heading_error -
+                                math.radians(1.0))
+            improved = pixel_improved or heading_improved
+            if improved or moved >= self.parking_no_progress_motion:
+                best_pixel_error = min(best_pixel_error, abs(pixel_error))
+                best_heading_error = min(best_heading_error, abs(heading))
+                progress_stamp = now
+                progress_pose = odom_pose
+                no_progress_count = 0
+            elif now - progress_stamp >= self.parking_no_progress_timeout:
+                no_progress_count += 1
+                self.publish_state(
+                    "IN_PROCESS_PARKING_NO_PROGRESS_RECOVERY",
+                    attempt=no_progress_count,
+                    pixel_error=pixel_error, moved=moved,
+                    requested_vy=self.parking_lateral_requested,
+                    guarded_vy=self.parking_lateral_guarded,
+                    **self.parking_pose_values())
+                # Discard a stale/jumped OCR center.  The next camera frame
+                # seeds a fresh center while the existing lidar cone-flow
+                # controller continues to command a bounded escape motion.
+                with self.lock:
+                    self.parking_center_filtered = None
+                    self.parking_center_source_stamp = 0.0
+                progress_stamp = now
+                progress_pose = odom_pose
+                best_pixel_error = abs(pixel_error)
+                if no_progress_count >= self.parking_no_progress_retries:
+                    self.smooth_stop_robot()
+                    with self.lock:
+                        self.parking_active = False
+                    self.publish_state(
+                        "IN_PROCESS_PARKING_REACQUIRE_REQUIRED",
+                        pixel_error=pixel_error,
+                        **self.parking_pose_values())
+                    return "REACQUIRE"
+            with self.lock:
+                live_payload = (None if self.latest_ocr is None else
+                                dict(self.latest_ocr))
+                center_source_stamp = self.parking_center_source_stamp
+            center_tolerance = (
+                self.parking_center_release_tolerance
+                if align_stable > 0 else self.parking_center_tolerance)
+            aligned = (target_live and
+                       target_age <= self.parking_target_memory_s and
+                       self.parking_center_horizontally_complete(live_payload) and
+                       abs(pixel_error) <= center_tolerance and
+                       not self.parking_heading_correction_active)
+            new_center_frame = (
+                center_source_stamp > last_align_source_stamp + 1.0e-5)
+            if new_center_frame:
+                align_stable = align_stable + 1 if aligned else 0
+                last_align_source_stamp = center_source_stamp
             rospy.logwarn_throttle(
                 0.25,
                 "IN_PROCESS_PARKING_ALIGN wall=%.3f heading=%.1fdeg "
@@ -3140,9 +3831,12 @@ class Xunfei2026RoomDeliveryManager(object):
                 distance, math.degrees(heading), pixel_error,
                 str(target_live), self.parking_pose_text(), vx, vy, wz,
                 align_stable,
-                self.parking_stable_frames)
-            if align_stable >= self.parking_stable_frames:
+                self.parking_center_stable_frames)
+            if align_stable >= self.parking_center_stable_frames:
                 self.parking_center_aligned = True
+                with self.lock:
+                    self.parking_center_lock_odom_pose = (
+                        None if self.odom_pose is None else tuple(self.odom_pose))
                 self.publish_state(
                     "IN_PROCESS_PARKING_CENTERED", pixel_error=pixel_error,
                     wall_heading_error=heading,
@@ -3156,7 +3850,7 @@ class Xunfei2026RoomDeliveryManager(object):
                 self.parking_active = False
             self.publish_state("IN_PROCESS_PARKING_ALIGNMENT_TIMEOUT",
                                **self.parking_pose_values())
-            return "TIMEOUT"
+            return "REACQUIRE"
 
         # Phase 2: approach the wall while preserving the established center.
         stable = 0
@@ -3187,7 +3881,7 @@ class Xunfei2026RoomDeliveryManager(object):
                         search_wz = clamp(
                             self.prepark_heading_kp * angular_error,
                             -self.parking_max_wz, self.parking_max_wz)
-                self.publish_direct_command(wz=search_wz)
+                self.publish_parking_command(wz=search_wz)
                 stable = 0
                 rospy.logwarn_throttle(
                     0.5, "IN_PROCESS_PARKING waiting wall model search_wz=%.3f",
@@ -3196,24 +3890,47 @@ class Xunfei2026RoomDeliveryManager(object):
                 continue
             (vx, vy, wz, distance, heading, points, pixel_error,
              target_live, target_age) = values
-            self.publish_direct_command(vx, vy, wz)
+            with self.lock:
+                center_lock_pose = self.parking_center_lock_odom_pose
+                odom_pose = self.odom_pose
+            centerline_drift = float("inf")
+            if center_lock_pose is not None and odom_pose is not None:
+                delta_x = odom_pose[0] - center_lock_pose[0]
+                delta_y = odom_pose[1] - center_lock_pose[1]
+                centerline_drift = abs(
+                    -math.sin(center_lock_pose[2]) * delta_x +
+                    math.cos(center_lock_pose[2]) * delta_y)
+            if centerline_drift > self.parking_centerline_max_drift:
+                self.smooth_stop_robot()
+                with self.lock:
+                    self.parking_active = False
+                self.publish_state(
+                    "IN_PROCESS_PARKING_CENTERLINE_DRIFT_REACQUIRE",
+                    drift=centerline_drift,
+                    limit=self.parking_centerline_max_drift,
+                    **self.parking_pose_values())
+                return "REACQUIRE"
+            self.publish_parking_command(vx, vy, wz)
             target = self.locked_parking_target_center()
+            with self.lock:
+                live_payload = (None if self.latest_ocr is None else
+                                dict(self.latest_ocr))
             centered = (
-                target is not None and
-                target[2] <= self.parking_target_reacquire_s and
-                abs(pixel_error) <= self.parking_recenter_threshold)
+                self.parking_center_aligned and
+                centerline_drift <= self.parking_centerline_max_drift)
             complete = (abs(distance - self.parking_wall_distance) <=
                         self.parking_wall_tolerance and
-                        abs(heading) <= self.parking_heading_tolerance and
+                        not self.parking_heading_correction_active and
                         centered)
             stable = stable + 1 if complete else 0
             rospy.logwarn_throttle(
                 0.25,
                 "IN_PROCESS_PARKING wall=%.3f/%.3f heading=%.1fdeg "
-                "pixel=%.1f live=%s pose=%s cmd=(%.3f,%.3f,%.3f) "
+                "pixel=%.1f live=%s drift=%.3f pose=%s cmd=(%.3f,%.3f,%.3f) "
                 "stable=%d/%d",
                 distance, self.parking_wall_distance, math.degrees(heading),
-                pixel_error, str(target_live), self.parking_pose_text(),
+                pixel_error, str(target_live), centerline_drift,
+                self.parking_pose_text(),
                 vx, vy, wz, stable,
                 self.parking_stable_frames)
             if stable >= self.parking_stable_frames:
@@ -3277,6 +3994,7 @@ class Xunfei2026RoomDeliveryManager(object):
             with self.lock:
                 self.latest_ocr = None
                 self.target_snapshot = None
+                self.parking_target_wall_yaw = None
                 self.parking_target_ocr = None
                 self.parking_target_stamp = 0.0
                 self.parking_center_filtered = None
@@ -3302,17 +4020,40 @@ class Xunfei2026RoomDeliveryManager(object):
 
                 self.publish_state("TARGET_FOUND",
                                    target=self.target_warehouse)
+                # A sign seen obliquely at a corner does not identify its wall
+                # reliably. Center it first, rebuild the target from the live
+                # front lidar wall, and enter parking only after the constrained
+                # planner reaches that physical pre-parking pose.
+                if not self.align_target_for_parking():
+                    resume_index = self.reset_target_and_resume_wall_scan(
+                        "REACQUIRE")
+                    approach_start = False
+                    continue
+                if not self.refresh_centered_target_wall():
+                    resume_index = self.reset_target_and_resume_wall_scan(
+                        "REACQUIRE")
+                    approach_start = False
+                    continue
+                if not self.approach_target():
+                    self.publish_state(
+                        "PLANNED_PREPARK_REACQUIRE_NO_DIRECT_FALLBACK")
+                    resume_index = self.reset_target_and_resume_wall_scan(
+                        "REACQUIRE")
+                    approach_start = False
+                    continue
                 self.handoff_directly_to_parking()
                 parking_result = self.park()
                 if parking_result == "SUCCEEDED":
                     parking_success = True
                     break
-                if parking_result.startswith("WRONG_WORKSHOP:"):
+                if (parking_result.startswith("WRONG_WORKSHOP:") or
+                        parking_result in ("REACQUIRE", "TIMEOUT")):
                     resume_index = self.reset_target_and_resume_wall_scan(
                         parking_result)
                     if resume_index >= len(self.wall_route_points) - 1:
-                        reason = "wall inspection route completed after rejected target"
-                        break
+                        # Resume from the last real segment instead of turning a
+                        # recoverable parking miss into mission termination.
+                        resume_index = max(0, len(self.wall_route_points) - 2)
                     approach_start = False
                     continue
                 reason = "in-process parking timeout"

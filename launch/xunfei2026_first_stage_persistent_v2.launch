@@ -89,16 +89,16 @@
     <param name="angular_accel" value="0.75" />
     <param name="command_rate_hz" value="30.0" />
     <param name="decode_rate_hz" value="$(arg qr_decode_rate_hz)" />
-    <param name="enhanced_rate_hz" value="2.5" />
-    <param name="decode_scales" value="1.0,1.35,1.7" />
+    <param name="enhanced_rate_hz" value="3.0" />
+    <param name="decode_scales" value="1.0,1.35,1.7,2.2" />
     <param name="max_frame_width" value="1280" />
     <param name="nav_settle_s" value="0.7" />
     <param name="center_enabled" value="true" />
-    <param name="center_timeout_s" value="5.0" />
+    <param name="center_timeout_s" value="7.0" />
     <param name="center_tolerance_m" value="0.035" />
     <param name="center_max_speed" value="0.08" />
     <param name="center_gain" value="0.75" />
-    <param name="center_max_move_m" value="0.16" />
+    <param name="center_max_move_m" value="0.24" />
     <param name="center_hard_clearance_m" value="0.20" />
     <param name="center_sector_half_deg" value="28.0" />
     <param name="center_pair_sum_min_m" value="0.65" />

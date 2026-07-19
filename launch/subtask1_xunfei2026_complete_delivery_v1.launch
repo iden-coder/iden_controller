@@ -14,7 +14,7 @@
 
   <node pkg="speech_command" type="cloud_asr_test2"
         name="cloud_asr_test2" output="screen"
-        respawn="true" respawn_delay="0.8" />
+        respawn="true" respawn_delay="0.55" />
 
   <node pkg="iden_controller" type="subtask1_real_order_fusion_route.py"
         name="subtask1_xunfei2026_complete_fusion" output="screen">
@@ -30,21 +30,22 @@
     <param name="streaming_qr_decision" value="false" />
     <param name="require_wake_before_order" value="true" />
     <param name="require_target_category" value="true" />
-    <!-- cloud_asr_test2 now resumes the same continuous AIUI session after
-         the category prompt; killing and respawning it added several seconds. -->
-    <param name="rearm_asr_on_incomplete_voice" value="false" />
+    <!-- Restore the proven front-first flow: restart ASR after the wake prompt
+         so loudspeaker echo cannot consume the category-listening session. -->
+    <param name="rearm_asr_on_incomplete_voice" value="true" />
     <param name="asr_node_name" value="/cloud_asr_test2" />
-    <param name="asr_rearm_delay_s" value="3.0" />
-    <param name="asr_tts_start_timeout_s" value="7.0" />
-    <param name="asr_tts_finish_timeout_s" value="20.0" />
-    <param name="asr_respawn_timeout_s" value="8.0" />
+    <param name="asr_rearm_delay_s" value="2.4" />
+    <param name="asr_tts_start_timeout_s" value="5.0" />
+    <param name="asr_tts_finish_timeout_s" value="15.0" />
+    <param name="asr_tts_quiet_settle_s" value="0.25" />
+    <param name="asr_respawn_timeout_s" value="6.0" />
     <param name="auto_start_nav" value="false" />
     <param name="default_voice_text" value="" />
     <param name="nav_launch_pkg" value="iden_controller" />
     <param name="nav_launch_file" value="xunfei2026_first_stage_persistent_v2.launch" />
     <param name="nav_roslaunch_args"
            value="map_yaml:=$(arg map_yaml) goal_x:=$(arg goal_x) goal_y:=$(arg goal_y) goal_yaw:=$(arg goal_yaw) start_base:=$(arg start_base) start_lidar:=$(arg start_lidar) start_camera:=$(arg start_camera) qr_angular_speed:=$(arg qr_angular_speed) qr_decode_rate_hz:=$(arg qr_decode_rate_hz)" />
-    <param name="nav_start_delay_s" value="0.5" />
+    <param name="nav_start_delay_s" value="0.30" />
     <param name="use_spark" value="$(arg use_spark)" />
     <param name="require_spark_decision" value="true" />
     <param name="spark_api_key" value="$(arg spark_api_key)" />
@@ -86,13 +87,14 @@
     <param name="candidate_ocr_votes" value="5" />
     <param name="target_confirm_frames" value="3" />
     <param name="target_edge_margin_ratio" value="0.08" />
+    <param name="target_min_visible_height_ratio" value="0.06" />
     <param name="target_vertical_edge_margin_ratio" value="0.02" />
     <param name="target_handoff_center_ratio" value="0.24" />
     <param name="ocr_image_height" value="600" />
     <param name="non_target_release_distance_m" value="0.24" />
-    <param name="non_target_hard_release_distance_m" value="0.52" />
+    <param name="non_target_hard_release_distance_m" value="0.55" />
     <param name="non_target_release_yaw_deg" value="16.0" />
-    <param name="non_target_hard_release_yaw_deg" value="35.0" />
+    <param name="non_target_hard_release_yaw_deg" value="40.0" />
     <param name="non_target_blank_s" value="0.45" />
     <param name="non_target_target_override_frames" value="5" />
     <param name="candidate_hold_s" value="1.8" />
@@ -114,8 +116,8 @@
     <param name="prepark_center_tolerance_px" value="24.0" />
     <param name="prepark_center_stable_frames" value="2" />
     <param name="prepark_heading_kp" value="1.4" />
-    <param name="prepark_min_wz" value="0.10" />
-    <param name="prepark_max_wz" value="0.28" />
+    <param name="prepark_min_wz" value="0.11" />
+    <param name="prepark_max_wz" value="0.34" />
     <param name="stuck_timeout_s" value="6.0" />
     <param name="goal_retries" value="2" />
     <!-- These points describe inspection order and approximate segment lengths.
@@ -181,8 +183,13 @@
     <!-- Predict only the near-term swept rectangle.  This catches a cone in
          the braking path without restoring a large static exclusion radius. -->
     <param name="motion_prediction_horizon_s" value="0.60" />
-    <param name="motion_prediction_margin_m" value="0.012" />
+    <param name="motion_prediction_margin_m" value="0.016" />
     <param name="motion_prediction_steps" value="6" />
+    <!-- Slow lateral motion before a cone reaches the moving front corner;
+         the predictive footprint guard remains the hard collision layer. -->
+    <param name="front_corner_lateral_slow_gap_m" value="0.113" />
+    <param name="front_corner_lateral_hard_gap_m" value="0.015" />
+    <param name="front_corner_lateral_min_scale" value="0.82" />
     <param name="predictive_escape_speed_mps" value="0.035" />
     <param name="wall_side_corridor_margin_m" value="0.010" />
     <param name="wall_side_corridor_cluster_gap_m" value="0.10" />
@@ -195,11 +202,20 @@
     <!-- Keep yaw perpendicular to the wall and use the omni lateral axis to
          center the OCR sign.  Faster center tracking removes the old yaw/vy
          oscillation without bypassing the rectangular-footprint guards. -->
-    <param name="parking_center_tolerance_px" value="24.0" />
+    <param name="parking_center_tolerance_px" value="14.0" />
+    <param name="parking_center_release_tolerance_px" value="28.0" />
+    <param name="parking_center_stable_frames" value="2" />
+    <param name="parking_centerline_max_drift_m" value="0.035" />
+    <param name="parking_lateral_sign" value="-1.0" />
+    <param name="parking_auto_lateral_sign" value="false" />
+    <param name="parking_lateral_probe_distance_m" value="0.025" />
+    <param name="parking_lateral_divergence_px" value="35.0" />
     <param name="parking_center_filter_alpha" value="0.65" />
     <param name="parking_center_max_step_px" value="100.0" />
     <param name="parking_approach_max_vy_mps" value="0.075" />
     <param name="parking_translation_heading_gate_deg" value="8.0" />
+    <param name="parking_final_heading_gate_deg" value="4.5" />
+    <param name="parking_reverse_correction_speed_mps" value="0.025" />
     <param name="parking_recovery_trigger_vy_mps" value="0.015" />
     <param name="parking_escape_lateral_speed_mps" value="0.035" />
     <param name="parking_forward_escape_margin_m" value="0.020" />
@@ -214,7 +230,23 @@
     <param name="parking_rear_clear_nudge_speed_mps" value="0.055" />
     <param name="parking_rear_clear_front_min_m" value="0.32" />
     <param name="parking_rear_clear_wall_min_m" value="0.42" />
+    <param name="parking_forward_escape_wall_min_m" value="0.28" />
     <param name="parking_recenter_threshold_px" value="48.0" />
+    <!-- During docking, correct moderate image error with vx and vy together.
+         Only a large offset pauses forward motion; final confirmation still
+         requires the tighter 48 px recenter threshold above. -->
+    <param name="parking_forward_center_gate_px" value="96.0" />
+    <!-- Once phase-1 centering is complete, the sign may leave the camera at
+         close range. Freeze lateral correction and finish from lidar geometry. -->
+    <param name="parking_visual_freeze_distance_m" value="0.32" />
+    <!-- Parking-only command shaping. Heading hysteresis removes the repeated
+         stop/start at 2.8 degrees; cone guards still bypass these ramps. -->
+    <param name="parking_heading_tolerance_deg" value="4.0" />
+    <param name="parking_heading_release_deg" value="2.5" />
+    <param name="parking_min_wz_rps" value="0.070" />
+    <param name="parking_accel_x_mps2" value="0.42" />
+    <param name="parking_accel_y_mps2" value="0.32" />
+    <param name="parking_accel_wz_rps2" value="0.70" />
     <param name="wall_detour_away_m" value="0.18" />
     <param name="wall_detour_min_away_m" value="0.08" />
     <param name="wall_detour_pass_m" value="0.44" />
@@ -222,7 +254,29 @@
     <param name="wall_detour_speed_mps" value="0.10" />
     <param name="wall_detour_hard_clearance_m" value="0.18" />
     <param name="wall_standoff_m" value="0.58" />
+    <!-- TEB handles the long pre-parking curve with live lidar obstacles;
+         direct lidar/OCR control remains responsible for final wall docking. -->
+    <param name="planned_preparking_enabled" value="true" />
+    <param name="target_wall_max_yaw_deviation_deg" value="40.0" />
+    <param name="planned_preparking_timeout_s" value="7.0" />
+    <param name="planned_preparking_tangent_search_m" value="0.06" />
+    <param name="planned_preparking_max_translation_m" value="0.60" />
+    <param name="planned_preparking_corridor_m" value="0.26" />
+    <param name="preparking_wall_lock_s" value="0.35" />
+    <param name="prepark_settle_s" value="0.10" />
+    <param name="parking_initial_wall_min_m" value="0.20" />
+    <param name="parking_initial_wall_max_m" value="0.85" />
+    <param name="parking_initial_wall_validation_s" value="0.30" />
+    <param name="parking_wall_heading_prior_tolerance_deg" value="12.0" />
+    <param name="parking_fast_vx_mps" value="0.15" />
+    <param name="parking_slow_vx_mps" value="0.040" />
+    <param name="parking_slow_distance_m" value="0.085" />
     <param name="parking_timeout_s" value="55.0" />
+    <param name="parking_alignment_timeout_s" value="14.0" />
+    <param name="parking_no_progress_timeout_s" value="2.2" />
+    <param name="parking_no_progress_pixel_delta_px" value="12.0" />
+    <param name="parking_no_progress_motion_m" value="0.035" />
+    <param name="parking_no_progress_retries" value="2" />
     <param name="parking_target_reacquire_s" value="8.0" />
     <param name="parking_retries" value="1" />
     <param name="mission_timeout_s" value="420.0" />

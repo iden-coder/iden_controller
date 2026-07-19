@@ -155,6 +155,8 @@ class Subtask1RealOrderFusion(object):
             "~asr_tts_start_timeout_s", max(6.0, self.asr_rearm_delay_s)))
         self.asr_tts_finish_timeout_s = float(rospy.get_param(
             "~asr_tts_finish_timeout_s", 20.0))
+        self.asr_tts_quiet_settle_s = float(rospy.get_param(
+            "~asr_tts_quiet_settle_s", 0.45))
         self.asr_respawn_timeout_s = float(rospy.get_param(
             "~asr_respawn_timeout_s", 8.0))
         self.default_voice_text = rospy.get_param("~default_voice_text", "")
@@ -195,6 +197,7 @@ class Subtask1RealOrderFusion(object):
         self.lock = threading.Lock()
         self.asr_rearm_lock = threading.Lock()
         self.asr_rearm_in_progress = False
+        self.order_accepted_event = threading.Event()
         self.voice_text = ""
         self.target_category = ""
         self.qr_items = []
@@ -250,6 +253,15 @@ class Subtask1RealOrderFusion(object):
 
     def accept_voice(self, text):
         text = normalize_text(text)
+        # Once a valid order has been accepted, ASR output is no longer part of
+        # the task. Check this before parsing the category so chassis noise and
+        # TTS echo cannot re-enter the incomplete-order prompt/rearm path.
+        with self.lock:
+            order_already_accepted = bool(self.voice_text)
+        if order_already_accepted or self.order_accepted_event.is_set():
+            rospy.loginfo_throttle(
+                5.0, "ASR_POST_ORDER_IGNORED task voice window is closed")
+            return
         category = self.extract_target_category(text)
         wake = self.has_wake_word(text)
 
@@ -281,6 +293,7 @@ class Subtask1RealOrderFusion(object):
                 return
             self.voice_text = text
             self.target_category = category
+            self.order_accepted_event.set()
         rospy.loginfo("voice command accepted: %s", text)
         if self.target_category:
             rospy.loginfo("real target category: %s", self.target_category)
@@ -341,6 +354,9 @@ class Subtask1RealOrderFusion(object):
     def rearm_asr_if_needed(self):
         if not self.rearm_asr_on_incomplete_voice:
             return
+        if self.order_accepted_event.is_set():
+            rospy.loginfo("ASR_REARM_SKIPPED order already accepted")
+            return
         with self.asr_rearm_lock:
             if self.asr_rearm_in_progress:
                 rospy.logwarn("ASR rearm already in progress; duplicate request ignored")
@@ -376,7 +392,9 @@ class Subtask1RealOrderFusion(object):
         quiet_since = None
 
         rospy.loginfo("ASR_REARM_WAIT_TTS waiting for spoken prompt to finish")
-        while not rospy.is_shutdown() and time.time() < finish_deadline:
+        while (not rospy.is_shutdown() and
+               not self.order_accepted_event.is_set() and
+               time.time() < finish_deadline):
             now = time.time()
             active = self.tts_process_active()
             if active:
@@ -385,7 +403,7 @@ class Subtask1RealOrderFusion(object):
             elif seen_tts:
                 if quiet_since is None:
                     quiet_since = now
-                elif now - quiet_since >= 0.45:
+                elif now - quiet_since >= self.asr_tts_quiet_settle_s:
                     rospy.loginfo("ASR_REARM_TTS_FINISHED prompt playback completed")
                     return
             elif now - start >= self.asr_tts_start_timeout_s:
@@ -394,6 +412,10 @@ class Subtask1RealOrderFusion(object):
                     now - start)
                 return
             rospy.sleep(0.1)
+
+        if self.order_accepted_event.is_set():
+            rospy.loginfo("ASR_REARM_CANCELLED order accepted during prompt")
+            return
 
         rospy.logwarn(
             "ASR_REARM_TTS_TIMEOUT after %.1fs; recovering ASR",
@@ -419,7 +441,7 @@ class Subtask1RealOrderFusion(object):
     def rearm_asr_thread(self):
         try:
             self.wait_for_prompt_playback()
-            if rospy.is_shutdown():
+            if rospy.is_shutdown() or self.order_accepted_event.is_set():
                 return
             rospy.logwarn("rearming ASR node after spoken prompt")
             subprocess.call(["rosnode", "kill", self.asr_node_name])

@@ -257,4 +257,3 @@ if __name__ == "__main__":
             rate.sleep()
     except rospy.ROSInterruptException:
         pass
-
